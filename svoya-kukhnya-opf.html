@@ -1,0 +1,1458 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Своя кухня — игра про формы предпринимательства</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500&family=Unbounded:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#fbf4ef; --surface:#ffffff; --surface2:#fdeceb; --ink:#2a0b12; --muted:#7d4a54; --line:#3a0d17;
+  --pink:#ff2f73; --pinkInk:#c1124f; --yellow:#ffd21f; --yel2:#fff3c4; --wine:#8e1b2e;
+  --ok:#17845f; --okbg:#ddf5e8; --bad:#c8102e; --badbg:#ffe1e4;
+  --drop:0 5px 0 rgba(58,13,23,.16);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#1d0a10; --surface:#2b1219; --surface2:#3a1821; --ink:#fff1ec; --muted:#d9b3ba; --line:#f0c4cb;
+    --pinkInk:#ff8fb0; --yel2:#4a3a12; --wine:#ff8fb0; --ok:#5fe0b0; --okbg:#163b2f; --bad:#ff7e8e; --badbg:#4a1620;
+    --drop:0 5px 0 rgba(0,0,0,.45);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#1d0a10; --surface:#2b1219; --surface2:#3a1821; --ink:#fff1ec; --muted:#d9b3ba; --line:#f0c4cb;
+  --pinkInk:#ff8fb0; --yel2:#4a3a12; --wine:#ff8fb0; --ok:#5fe0b0; --okbg:#163b2f; --bad:#ff7e8e; --badbg:#4a1620;
+  --drop:0 5px 0 rgba(0,0,0,.45);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Raleway,"Segoe UI",Arial,sans-serif;font-size:17px;line-height:1.5;overflow:hidden}
+.app{max-width:1180px;margin:0 auto;padding:10px 14px 12px;height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column}
+button{font:inherit;color:inherit}
+b{font-weight:800}
+
+/* HUD */
+.hud{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex:none;min-width:0}
+.hud #room{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;max-width:40vw}
+.brand{font-family:Unbounded,Raleway,sans-serif;font-weight:700;font-size:18px;margin-right:auto;display:flex;align-items:center;gap:8px;color:var(--wine)}
+.brand svg{width:30px;height:30px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;font-weight:700;font-size:14px;background:var(--surface)}
+.chip,.hbtn{white-space:nowrap;flex:none}
+.chip.stars{background:var(--yellow);color:#2a0b12;border-color:#3a0d17}
+.hbtn{font-weight:700;font-size:14px;border:1.5px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--surface);color:var(--ink);cursor:pointer}
+.hbtn:hover{background:var(--surface2)}
+.hbtn[hidden]{display:none}
+.saved{font-size:13px;color:var(--muted);font-weight:600;opacity:0;transition:opacity .3s}
+.saved.on{opacity:1}
+
+/* STAGE */
+.stage{position:relative;width:100%;flex:1 1 auto;min-height:110px;border-radius:24px;overflow:hidden;border:1.5px solid var(--line);background:#c3c8ce;box-shadow:var(--drop)}
+.stage.compact{min-height:84px}
+.stage.hall{background:#f6ede4}
+.stage svg.bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage.blur svg.bg{filter:blur(3px) saturate(.85) brightness(.97)}
+.char{position:absolute;bottom:1%;height:93%;transition:transform .45s ease,opacity .45s ease,filter .3s}
+.char svg{height:100%;width:auto;display:block}
+.char.left{left:5%}
+.char.right{right:6%}
+.char.hidden{opacity:0;transform:translateY(10%)}
+.char.quiet{filter:saturate(.8) brightness(.94)}
+.char.talk{animation:bob 1.3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-1.6%)}}
+.char.jump{animation:jump .6s ease}
+@keyframes jump{30%{transform:translateY(-7%)}60%{transform:translateY(0)}80%{transform:translateY(-2%)}}
+.steam{transform-box:fill-box;transform-origin:center;animation:steam 3.2s ease-in-out infinite}
+@keyframes steam{0%{opacity:0;transform:translateY(8px)}45%{opacity:.75}100%{opacity:0;transform:translateY(-16px)}}
+.pop{position:absolute;left:50%;top:22%;transform:translateX(-50%);font-family:Unbounded,Raleway,sans-serif;font-weight:700;font-size:clamp(20px,3.4vw,32px);color:#ffd21f;text-shadow:0 2px 0 #3a0d17,0 0 14px rgba(58,13,23,.4);pointer-events:none;animation:pop 1.1s ease forwards;z-index:4}
+@keyframes pop{0%{opacity:0;transform:translate(-50%,10px) scale(.7)}25%{opacity:1;transform:translate(-50%,0) scale(1.1)}100%{opacity:0;transform:translate(-50%,-40px) scale(1)}}
+
+/* close-up guest */
+.guestbox{position:absolute;right:4%;bottom:0;height:84%;display:flex;align-items:flex-end;gap:0;transition:filter .3s}
+.guestbox svg{height:100%;width:auto;display:block}
+.guestbox.pair svg{height:88%;margin-left:-9%}
+.guestbox.pair svg:first-child{margin-left:0}
+.guestbox.talk{animation:bob 1.3s ease-in-out infinite}
+.guestbox.quiet{filter:saturate(.8) brightness(.94)}
+.cloth{position:absolute;right:0;bottom:0;width:58%;height:20%;background:#fff;border-top:3px solid #3a0d17;border-left:3px solid #3a0d17;border-top-left-radius:18px}
+.cloth::after{content:"";position:absolute;left:44%;top:0;bottom:0;width:13%;background:#ff2f73}
+.cloth .prop{position:absolute;left:18%;top:-46%;font-size:clamp(26px,4.4vw,48px);font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
+.stage.compact .guestbox{height:96%}
+.stage.compact .cloth{height:26%}
+
+/* HALL */
+.hallgrid{position:absolute;left:2%;right:2%;top:17%;bottom:2%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));column-gap:2%}
+.spot{position:relative;border:none;background:none;padding:0;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-height:0;min-width:0;transform-origin:50% 100%}
+.spot.r0{transform:scale(.76)}
+.spot.r1{transform:scale(.88)}
+.spot .tag{position:relative;z-index:2;display:inline-flex;align-items:center;gap:6px;background:#fff;color:#2a0b12;border:2px solid #3a0d17;border-radius:999px;padding:3px 10px 3px 4px;font-weight:800;font-size:clamp(10px,1.35vw,14px);white-space:nowrap;box-shadow:0 3px 0 #3a0d17;margin-bottom:4px;max-width:100%}
+.spot .tag i{font-style:normal;background:#ff2f73;color:#2a0b12;border-radius:999px;padding:1px 8px;border:1.5px solid #3a0d17}
+.spot .tag span{overflow:hidden;text-overflow:ellipsis;min-width:0;white-space:nowrap}
+.spot .tag i{flex:none}
+.spot .who{display:flex;align-items:flex-end;justify-content:center;height:50%;flex:none;margin-bottom:-6%;position:relative;z-index:0;width:100%}
+.spot .who svg{height:100%;width:auto;max-width:60%}
+.spot .who svg+svg{margin-left:-14%}
+.spot .tbl{position:relative;width:46%;z-index:1}
+.spot .tbl svg{width:100%;height:auto;display:block}
+.spot .tbl .prop{position:absolute;left:18%;top:2%;transform:translate(-50%,-50%);font-size:clamp(16px,2.6vw,30px);font-family:"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif}
+.spot .done{position:absolute;top:-4px;right:12%;width:26px;height:26px;border-radius:50%;background:#17845f;color:#fff;display:grid;place-items:center;font-weight:800;border:2px solid #3a0d17;font-size:14px}
+.spot:hover .tag,.spot:focus-visible .tag{background:#ffd21f}
+.spot.sel .tag{background:#ffd21f}
+.spot:focus-visible{outline:none}
+.spot:focus-visible .tbl{outline:3px solid #ff2f73;outline-offset:3px;border-radius:12px}
+.spot.isdone .who{filter:saturate(.7)}
+.spot .tag em{font-style:normal;flex:none;min-width:22px;height:22px;border-radius:50%;background:#ffd21f;border:1.5px solid #3a0d17;display:grid;place-items:center;font-size:12px}
+.spot.locked .who,.spot.locked .tbl{filter:grayscale(.85) brightness(1.05);opacity:.7}
+.spot.locked .tag{background:#f1e4de;color:#7d4a54}
+.spot.locked .tag i{background:#e6d2cc}
+.spot.next .tag{animation:glowTag 1.6s ease-in-out infinite}
+@keyframes glowTag{50%{box-shadow:0 3px 0 #3a0d17,0 0 0 6px rgba(255,47,115,.35)}}
+
+/* PANEL */
+.panel{margin-top:10px;background:var(--surface);border:1.5px solid var(--line);border-radius:24px;padding:16px 20px;flex:0 1 auto;min-height:0;max-height:58%;overflow:auto;overscroll-behavior:contain;box-shadow:var(--drop)}
+.stage.compact + .panel{max-height:84%}
+.panel > *{animation:fade .3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.speaker{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:14px;padding:3px 12px;border-radius:999px;border:1.5px solid #3a0d17;background:var(--pink);color:#2a0b12;margin-bottom:10px}
+.speaker.c{background:var(--yellow)}
+.speaker.g{background:#ffb36b}
+.speaker.w{background:#ff8fb0}
+.speaker .av{width:24px;height:24px;border-radius:50%;background:#fff;border:1.5px solid #3a0d17;overflow:hidden;display:inline-block;margin-left:-6px}
+.speaker .av svg{width:100%;height:auto;margin-top:-2px}
+.say{font-size:clamp(15px,calc(.7vw + 1.1vh),19px);line-height:1.5;max-width:76ch}
+.term{color:var(--pinkInk);font-weight:800;border-bottom:2px dotted currentColor;cursor:help;position:relative;outline:none}
+.term .tip{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);width:min(320px,80vw);background:#2a0b12;color:#fff;font-weight:600;font-size:14px;line-height:1.4;padding:10px 12px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .15s;z-index:20}
+.term:hover .tip,.term:focus .tip{opacity:1}
+.nav{display:flex;align-items:center;gap:10px;margin-top:12px}
+.nav .dots{flex:1;display:flex;gap:5px;flex-wrap:wrap}
+.nav .dots i{width:8px;height:8px;border-radius:50%;background:var(--surface2);border:1px solid var(--line)}
+.nav .dots i.on{background:var(--pink)}
+.arrow{width:48px;height:48px;border-radius:50%;border:1.5px solid #3a0d17;background:var(--yellow);color:#2a0b12;font-size:22px;font-weight:800;cursor:pointer;box-shadow:0 4px 0 #3a0d17;display:grid;place-items:center;flex:none}
+.arrow:disabled{opacity:.35;cursor:default}
+.arrow.back{background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:0 4px 0 var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:16px}
+.row.end{justify-content:flex-end}
+.btn{font-weight:800;font-size:16px;border:1.5px solid #3a0d17;background:var(--yellow);color:#2a0b12;border-radius:14px;padding:11px 20px;cursor:pointer;box-shadow:0 4px 0 #3a0d17;transition:transform .1s,box-shadow .1s}
+.btn:hover{transform:translateY(-1px)}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #3a0d17}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:0 4px 0 var(--line)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--pink);outline-offset:3px}
+.title h1{font-family:Unbounded,Raleway,sans-serif;font-weight:700;font-size:clamp(30px,5.4vw,52px);line-height:1.05;margin:0 0 10px;color:var(--wine)}
+.title p{margin:0;color:var(--muted);max-width:62ch;font-weight:600}
+.credit{margin-top:12px;color:var(--muted);font-size:13px}
+.field{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.field input{flex:1 1 220px;font:inherit;font-weight:600;font-size:18px;padding:11px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface2);color:var(--ink)}
+.avatars{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.av2{width:78px;height:96px;border-radius:18px;border:1.5px solid var(--line);background:linear-gradient(#ffe6a8,#ffc2cf);cursor:pointer;padding:4px 0 0;overflow:hidden;display:flex;justify-content:center}
+.av2 svg{height:150%;width:auto;margin-top:-2px}
+.av2[aria-pressed="true"]{outline:3px solid var(--pink);outline-offset:2px}
+.hint{color:var(--muted);font-size:14px;margin-top:6px}
+.err{color:var(--bad);font-weight:700;font-size:14px;min-height:1.2em;margin-top:6px}
+
+/* forms list (kitchen) */
+.formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.fcard{border:1.5px solid #3a0d17;border-radius:12px;padding:6px 10px;color:#2a0b12;font-size:clamp(11.5px,calc(.5vw + .7vh),14px);line-height:1.3}
+.fcard b{display:block;font-size:15px}
+
+/* dossier */
+.dossier{display:grid;grid-template-columns:auto 1fr;gap:14px 18px;align-items:center}
+.dossier .pic{width:110px;height:110px;border-radius:20px;border:1.5px solid var(--line);background:linear-gradient(#fff3c4,#ffd0dc);display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
+.dossier .pic svg{height:92%;width:auto}
+.dossier .pic svg+svg{margin-left:-22%}
+.dossier h3{font-family:Unbounded,Raleway,sans-serif;font-size:clamp(18px,2.4vw,22px);margin:0 0 4px;color:var(--wine)}
+.dossier dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;margin:6px 0 0;font-size:15.5px}
+.dossier dt{color:var(--muted);font-weight:700}
+.dossier dd{margin:0;font-weight:600}
+.progress{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.progress h3{font-family:Unbounded,Raleway,sans-serif;margin:0;font-size:19px;color:var(--wine)}
+
+/* quiz */
+.qtop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;color:var(--muted);font-weight:700;font-size:14px}
+.prog{flex:1;max-width:240px;height:8px;border-radius:99px;background:var(--surface2);overflow:hidden;border:1px solid var(--line)}
+.prog i{display:block;height:100%;background:var(--pink)}
+.qcard{font-size:clamp(15px,calc(.7vw + 1.1vh),20px);font-weight:700;line-height:1.35;background:var(--surface2);border:1.5px solid var(--line);border-radius:16px;padding:12px 16px;max-width:72ch}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-top:10px}
+.opts.col{grid-template-columns:1fr}
+.opt{font-weight:700;text-align:left;padding:10px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;line-height:1.35}
+.opt:hover:not(:disabled){background:var(--surface2)}
+.opt:disabled{cursor:default}
+.opt.right{background:var(--okbg);border-color:var(--ok)}
+.opt.wrong{background:var(--badbg);border-color:var(--bad)}
+.opt.right::after{content:" ✓";color:var(--ok)}
+.opt.wrong::after{content:" ✗";color:var(--bad)}
+.recipe{border:1.5px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:10px;background:var(--surface)}
+.recipe .rtop{display:flex;align-items:center;gap:8px;padding:6px 12px;color:#2a0b12;border-bottom:1.5px solid var(--line)}
+.recipe .rtop b{font-size:14px}
+.recipe .cnt{margin-left:auto;font-weight:800;font-size:14px}
+.recipe ul{list-style:none;margin:0;padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;font-size:13.5px;line-height:1.3}
+.recipe li{padding:3px 10px;border-radius:999px;background:var(--surface2);border:1px solid transparent}
+.recipe li.miss{background:var(--badbg);border-color:var(--bad)}
+.recipe li.miss::after{content:" ↺";font-weight:800;color:var(--bad)}
+.recipe li.ph{color:var(--muted);background:transparent;border:1px dashed var(--muted);min-width:40px;text-align:center}
+.sum{text-align:center;padding:6px 0}
+.sum .big{font-family:Unbounded,Raleway,sans-serif;font-weight:700;font-size:clamp(30px,5vw,46px);color:var(--wine)}
+.sum p{color:var(--muted);margin:6px auto 0;max-width:56ch}
+.note{border:1.5px solid var(--line);border-radius:14px;padding:10px 14px;margin-top:10px;background:var(--surface2);font-size:15.5px}
+.note .k{font-weight:800}
+.fbin{position:sticky;bottom:-16px;margin:12px -20px -16px;padding:10px 20px 14px;background:var(--surface);border-top:2px solid var(--line);display:grid;grid-template-columns:1fr auto;gap:2px 16px;align-items:center;animation:slideup .25s ease;z-index:3}
+.fbin.ok{border-top-color:var(--ok)} .fbin.no{border-top-color:var(--bad)}
+.fbin p{margin:0;font-size:15px;line-height:1.4;grid-column:1}
+.fbin .verdict{grid-column:1}
+.fbin .btn{grid-column:2;grid-row:1 / span 2}
+@keyframes slideup{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.verdict{font-family:Unbounded,Raleway,sans-serif;font-weight:700;font-size:16px}
+.verdict.ok{color:var(--ok)} .verdict.no{color:var(--bad)}
+
+/* checklist & choice */
+.formpick{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:12px}
+.fp{font-weight:800;text-align:left;border:1.5px solid #3a0d17;border-radius:14px;padding:10px 12px;cursor:pointer;color:#2a0b12;line-height:1.25;font-size:14.5px}
+.fp:disabled{cursor:default}
+.fp.gone{opacity:.35;text-decoration:line-through}
+.fp.right{outline:3px solid var(--ok)}
+.fp.wrong{outline:3px solid var(--bad)}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+.ccard{border:1.5px solid var(--line);border-radius:16px;padding:10px 14px;background:var(--surface);font-size:clamp(12.5px,calc(.5vw + .9vh),15px)}
+.ccard .row{margin-top:8px}
+.ccard.y{background:var(--yel2)}
+.ccard h4{font-family:Unbounded,Raleway,sans-serif;margin:0 0 6px;font-size:17px;color:var(--wine)}
+.ccard ul{margin:2px 0 0;padding-left:16px}
+.ccard .lbl{font-weight:800;color:var(--pinkInk);margin-top:6px}
+.cert{border:2px solid var(--line);border-radius:20px;padding:14px 18px;background:
+  radial-gradient(circle at 92% 12%,rgba(255,47,115,.2),transparent 40%),
+  radial-gradient(circle at 6% 90%,rgba(255,210,31,.3),transparent 40%),var(--surface2);position:relative;overflow:hidden}
+.cert h2{font-family:Unbounded,Raleway,sans-serif;margin:0 0 4px;font-size:clamp(22px,3.4vw,30px);line-height:1.1;color:var(--wine)}
+.cert .sub{color:var(--muted);font-weight:600}
+.cert dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:10px 0 0;font-size:clamp(13px,calc(.5vw + .9vh),16px)}
+.cert dt{font-weight:800;color:var(--muted);font-size:14px;padding-top:2px}
+.cert dd{margin:0;font-weight:700}
+.rating{margin-top:10px;font-family:Unbounded,Raleway,sans-serif;font-weight:700;font-size:19px}
+.vanart{position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;gap:2%;padding:0 3% 1%;background:linear-gradient(#ffe2c8,#fbf4ef 70%)}
+.vanart svg{height:94%;width:auto}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(30,8,14,.6);display:flex;align-items:flex-end;justify-content:center;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));padding-top:calc(12px + env(safe-area-inset-top,0px));z-index:50}
+.modal[hidden]{display:none}
+@media (min-width:700px){.modal{align-items:center}}
+.sheet{background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:24px;width:min(720px,100%);max-height:100%;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.sheet .top{padding:16px 20px 12px;border-bottom:1.5px solid var(--line);color:#2a0b12;border-radius:22px 22px 0 0;display:flex;gap:14px;align-items:center}
+.sheet .top .em{font-size:36px;line-height:1}
+.sheet .top h3{font-family:Unbounded,Raleway,sans-serif;margin:0;font-size:clamp(17px,2.4vw,21px);line-height:1.2}
+.sheet .top small{font-weight:700;font-size:13px;opacity:.8}
+.sheet .body{padding:14px 20px 18px}
+.facts{width:100%;border-collapse:separate;border-spacing:0 6px}
+.facts th{text-align:left;vertical-align:top;font-size:14px;font-weight:800;color:var(--muted);padding:6px 12px 6px 0;width:36%}
+.facts td{vertical-align:top;padding:6px 0;font-size:16px}
+.close{margin-left:auto;font-weight:800;border:1.5px solid #3a0d17;background:#fff;color:#2a0b12;border-radius:12px;width:40px;height:40px;cursor:pointer;flex:none}
+.bookgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.dish{position:relative;text-align:left;border:1.5px solid #3a0d17;border-radius:16px;padding:12px;cursor:pointer;color:#2a0b12;min-height:96px;display:flex;flex-direction:column;gap:4px}
+.dish:disabled{cursor:default;background:var(--surface2)!important;color:var(--muted);border-style:dashed}
+.dish .em{font-size:24px;line-height:1}
+.dish .sh{font-family:Unbounded,Raleway,sans-serif;font-weight:700;font-size:16px}
+.dish .nm{font-size:13px;font-weight:600;line-height:1.25}
+.law{color:var(--muted);font-size:14px;margin-top:10px}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:60}
+.confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:3px;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+@media (max-width:640px){
+  body{font-size:16px}
+  .app{padding:8px 8px 8px}
+  .stage{border-radius:18px}
+  .stage.compact{min-height:76px}
+  .panel{max-height:62%}
+  .hud{gap:6px}
+  .brand{font-size:15px}
+  .brand svg{width:24px;height:24px}
+  .saved{display:none}
+}
+@media (max-width:480px){
+  .brand .bt{display:none}
+  .hbtn .lbl{display:none}
+  .hud #room{max-width:none}
+  .chip,.hbtn{font-size:12.5px;padding:4px 9px}
+  .formgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .arrow{width:42px;height:42px}
+  .hallgrid{top:12%;column-gap:1%}
+  .char.left{left:1%}
+  .char.right{right:1%}
+  .guestbox{right:0;height:60%}
+  .stage.blur .char.left{height:72%;left:-4%}
+  .guestbox.pair svg{margin-left:-14%}
+  .vanart > svg{height:auto;width:58%}
+  .vanart > span{height:56%!important}
+  .cloth{width:64%;height:18%}
+  .panel{padding:16px;border-radius:20px}
+  .plant{display:none}
+  .fbin{grid-template-columns:1fr;margin:10px -16px -16px;padding:10px 16px 14px}
+  .fbin .btn{grid-column:1;grid-row:auto;width:100%;margin-top:6px}
+  .fbin p{font-size:14px}
+  .choice{grid-template-columns:1fr 1fr;gap:8px}
+  .ccard{padding:8px 10px}
+  .ccard h4{font-size:14px}
+  .ccard .btn{width:100%;padding:8px 6px;font-size:13.5px}
+  .ipnote{display:none}
+  .fcard{font-size:11px;padding:5px 8px}
+  .cert h2{font-size:20px}
+  .dossier{grid-template-columns:1fr}
+  .spot .tag{padding:2px 6px 2px 3px;gap:3px}
+  .spot .tag i{padding:0 5px}
+}
+@media (max-height:720px){
+  .panel{padding:12px 16px}
+  .fbin{bottom:-12px;margin-bottom:-12px}
+  .title h1{font-size:clamp(26px,4vw,40px)}
+  .btn{padding:9px 16px;font-size:15px}
+  .recipe ul{display:none}
+  .recipe .rtop{border-bottom:none}
+  .ipnote{display:none}
+  .opt{padding:8px 12px}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .app{display:grid;grid-template-columns:minmax(0,36%) minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:10px}
+  .hud{grid-column:1 / -1}
+  .stage,.stage.compact{grid-column:1;grid-row:2;height:100%;min-height:0}
+  .panel,.stage.compact + .panel{grid-column:2;grid-row:2;margin-top:0;max-height:none;height:100%}
+  .choice{grid-template-columns:1fr 1fr}
+  .guestbox{height:62%}
+  .stage.blur .char.left{height:74%}
+  .recipe{display:none}
+  .fcard span{display:none}
+  .opt{padding:6px 10px;font-size:14px}
+  .qcard{padding:8px 12px}
+  .ccard ul{font-size:12px}
+  .say{font-size:15px}
+}
+@media (max-width:640px) and (max-height:720px){
+  .fcard span{display:none}
+  .fcard{padding:5px 8px;font-size:12px}
+  .ccard{font-size:11.5px}
+  .ccard .lbl{margin-top:3px}
+  .stage.compact{min-height:66px}
+  .opt{padding:7px 10px;font-size:14.5px}
+  .say{font-size:15px}
+  .cert dl{font-size:12.5px}
+  .rating{font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hud">
+    <div class="brand"><svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="13" cy="15" r="9" fill="#fff" stroke="#3a0d17" stroke-width="2"/><circle cx="27" cy="15" r="9" fill="#fff" stroke="#3a0d17" stroke-width="2"/><circle cx="20" cy="11" r="10" fill="#fff" stroke="#3a0d17" stroke-width="2"/><rect x="10" y="17" width="20" height="16" rx="4" fill="#fff" stroke="#3a0d17" stroke-width="2"/><path d="M14 26h12" stroke="#ff2f73" stroke-width="3" stroke-linecap="round"/></svg><span class="bt">Своя кухня</span></div>
+    <span class="saved" id="saved">Сохранено</span>
+    <span class="chip" id="room">Начало</span>
+    <span class="chip stars" id="starChip" aria-live="polite">⭐ 0</span>
+    <button class="hbtn" id="bookBtn" hidden aria-label="Книга рецептов">📖<span class="lbl"> Книга рецептов</span></button>
+    <button class="hbtn" id="menuBtn" hidden aria-label="Меню">☰<span class="lbl"> Меню</span></button>
+  </header>
+  <div class="stage" id="stage"></div>
+  <section class="panel" id="panel" aria-live="polite"></section>
+</div>
+<div class="modal" id="modal" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Книга рецептов"></div></div>
+
+<template id="kitchenTpl"><svg class="bg" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs>
+        <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c3c8ce"/><stop offset="1" stop-color="#eceef1"/></linearGradient>
+        <pattern id="tiles" width="64" height="32" patternUnits="userSpaceOnUse"><rect width="64" height="32" fill="#f6f7f9"/><path d="M0 1H64M0 17H64M1 0V16M33 16V32" stroke="#c6cbd2" stroke-width="2"/></pattern>
+        <pattern id="floor" width="80" height="40" patternUnits="userSpaceOnUse"><rect width="80" height="40" fill="#f6ede4"/><rect width="40" height="20" fill="#8e1b2e"/><rect x="40" y="20" width="40" height="20" fill="#8e1b2e"/></pattern>
+        <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6c39b"/><stop offset="1" stop-color="#d98f6c"/></linearGradient>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbe9"/><stop offset="1" stop-color="#ffd2ee"/></linearGradient>
+        <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3f5f7"/><stop offset="1" stop-color="#a3aab3"/></linearGradient>
+        <radialGradient id="glow"><stop offset="0" stop-color="#fff2c2" stop-opacity=".85"/><stop offset="1" stop-color="#fff2c2" stop-opacity="0"/></radialGradient>
+        <radialGradient id="oven"><stop offset="0" stop-color="#ffd27a"/><stop offset="1" stop-color="#ff8a4c"/></radialGradient>
+      </defs>
+      <rect width="1200" height="460" fill="url(#wall)"/>
+      <rect width="1200" height="36" fill="#8e1b2e"/>
+      <rect y="36" width="1200" height="6" fill="#6f1323"/>
+      <rect x="230" y="150" width="970" height="140" fill="url(#tiles)"/>
+
+      <!-- window -->
+      <rect x="28" y="58" width="186" height="236" rx="8" fill="#e9925f"/>
+      <rect x="42" y="72" width="158" height="208" rx="3" fill="url(#sky)"/>
+      <ellipse cx="88" cy="118" rx="30" ry="12" fill="#fff" opacity=".85"/>
+      <ellipse cx="160" cy="170" rx="24" ry="9" fill="#fff" opacity=".7"/>
+      <path d="M121 72V280M42 168H200" stroke="#e9925f" stroke-width="9"/>
+      <rect x="20" y="288" width="202" height="14" rx="5" fill="#f6c39b"/>
+
+      <!-- chalkboard -->
+      <g transform="translate(250 64)">
+        <rect width="230" height="164" rx="10" fill="#c98463"/>
+        <rect x="10" y="10" width="210" height="144" rx="6" fill="#2b2b33"/>
+        <text x="115" y="42" text-anchor="middle" font-family="Unbounded,Raleway,Arial,sans-serif" font-weight="700" font-size="17" fill="#ffd21f">Меню дня</text>
+        <text x="115" y="76" text-anchor="middle" font-family="Raleway,Arial,sans-serif" font-weight="700" font-size="16" fill="#fff">ИП · ООО · АО</text>
+        <text x="115" y="102" text-anchor="middle" font-family="Raleway,Arial,sans-serif" font-weight="700" font-size="16" fill="#fff">ПТ · ТнВ · ПК</text>
+        <text x="115" y="128" text-anchor="middle" font-family="Raleway,Arial,sans-serif" font-weight="700" font-size="16" fill="#fff">ХП · КФХ · МУП</text>
+        <path d="M30 140h40M160 140h40" stroke="#ff2f73" stroke-width="3" stroke-linecap="round"/>
+        <path d="M200 26l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z" fill="#ff2f73"/>
+      </g>
+
+      <!-- shelves -->
+      <rect x="520" y="150" width="300" height="12" rx="3" fill="url(#wood)"/>
+      <rect x="520" y="236" width="300" height="12" rx="3" fill="url(#wood)"/>
+      <path d="M540 162l10 16h4l-6-16zM800 162l-10 16h-4l6-16zM540 248l10 16h4l-6-16zM800 248l-10 16h-4l6-16z" fill="#c47a58"/>
+      <rect x="536" y="114" width="56" height="36" rx="8" fill="#ff2f73" stroke="#a3123f" stroke-width="2"/>
+      <ellipse cx="564" cy="114" rx="30" ry="6" fill="#ff8fb0" stroke="#a3123f" stroke-width="2"/>
+      <circle cx="564" cy="106" r="5" fill="#a3123f"/>
+      <rect x="610" y="108" width="30" height="42" rx="6" fill="#fff" opacity=".9"/><rect x="610" y="124" width="30" height="26" rx="6" fill="#ffd21f"/><rect x="608" y="102" width="34" height="8" rx="3" fill="#8e1b2e"/>
+      <rect x="650" y="116" width="26" height="34" rx="6" fill="#fff" opacity=".9"/><rect x="650" y="128" width="26" height="22" rx="6" fill="#ff7a1a"/><rect x="648" y="110" width="30" height="8" rx="3" fill="#ff2f73"/>
+      <ellipse cx="722" cy="146" rx="34" ry="6" fill="#fff"/><ellipse cx="722" cy="139" rx="34" ry="6" fill="#f1f3f5"/><ellipse cx="722" cy="132" rx="34" ry="6" fill="#fff"/>
+      <rect x="766" y="118" width="44" height="32" rx="8" fill="#ff7a1a" stroke="#b4520c" stroke-width="2"/><ellipse cx="788" cy="118" rx="25" ry="5" fill="#ffb36b" stroke="#b4520c" stroke-width="2"/>
+      <rect x="540" y="204" width="20" height="32" rx="5" fill="#fff"/><rect x="540" y="216" width="20" height="20" rx="5" fill="#ff7a5c"/>
+      <rect x="566" y="208" width="20" height="28" rx="5" fill="#fff"/><rect x="566" y="220" width="20" height="16" rx="5" fill="#a2d65a"/>
+      <rect x="592" y="204" width="20" height="32" rx="5" fill="#fff"/><rect x="592" y="214" width="20" height="22" rx="5" fill="#c58a52"/>
+      <g transform="rotate(-8 680 220)"><rect x="640" y="214" width="80" height="12" rx="2" fill="#8e1b2e"/><rect x="644" y="202" width="72" height="12" rx="2" fill="#ff2f73"/><rect x="648" y="190" width="64" height="12" rx="2" fill="#ffd21f"/></g>
+      <path d="M744 236c0-20 16-30 30-30s30 10 30 30z" fill="#f6c39b" stroke="#c47a58" stroke-width="2"/>
+      <path d="M752 220c10-6 34-6 44 0" stroke="#c47a58" stroke-width="2" fill="none"/>
+
+      <!-- lamps -->
+      <g>
+        <path d="M560 42V72M820 42V72" stroke="#3a0d17" stroke-width="3"/>
+        <ellipse cx="560" cy="170" rx="110" ry="80" fill="url(#glow)"/>
+        <ellipse cx="820" cy="170" rx="110" ry="80" fill="url(#glow)"/>
+        <path d="M528 104h64l-18-34h-28z" fill="#6f1323"/><ellipse cx="560" cy="104" rx="32" ry="6" fill="#ffe9b0"/>
+        <path d="M788 104h64l-18-34h-28z" fill="#6f1323"/><ellipse cx="820" cy="104" rx="32" ry="6" fill="#ffe9b0"/>
+      </g>
+
+      <!-- hood -->
+      <rect x="990" y="0" width="70" height="44" fill="#b9c0c8"/>
+      <path d="M884 44H1166L1144 148H906Z" fill="url(#steel)" stroke="#8a929c" stroke-width="2"/>
+      <rect x="896" y="142" width="260" height="14" rx="4" fill="#8a929c"/>
+
+      <!-- stove -->
+      <path class="steam" d="M920 170c-10-14 10-22 0-36" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" style="animation-delay:.2s"/>
+      <path class="steam" d="M944 166c-10-14 10-22 0-36" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" style="animation-delay:1.2s"/>
+      <path class="steam" d="M966 172c-10-14 10-22 0-36" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" style="animation-delay:2.1s"/>
+      <rect x="902" y="182" width="88" height="54" rx="8" fill="#ff2f73" stroke="#a3123f" stroke-width="2"/>
+      <ellipse cx="946" cy="182" rx="48" ry="8" fill="#ff8fb0" stroke="#a3123f" stroke-width="2"/>
+      <rect x="890" y="196" width="14" height="8" rx="4" fill="#a3123f"/><rect x="988" y="196" width="14" height="8" rx="4" fill="#a3123f"/>
+      <path class="steam" style="animation:none" d="M1046 238q4-26 14-10q2-22 14-4q4-26 14-2q4-22 14 2q6-20 12 2q4-12 8 12z" fill="#ff7a1a"/><path d="M1058 238q4-14 10-4q4-14 10 0q4-16 12 0q4-12 10 4z" fill="#ffd21f"/>
+      <ellipse cx="1088" cy="230" rx="50" ry="9" fill="#2b2b33"/>
+      <ellipse cx="1088" cy="226" rx="38" ry="5" fill="#ffd21f"/>
+      <rect x="1136" y="224" width="44" height="8" rx="4" fill="#2b2b33"/>
+      <rect x="872" y="236" width="296" height="14" rx="4" fill="#6f1323"/>
+      <rect x="878" y="250" width="284" height="136" rx="8" fill="#e4e7eb" stroke="#8a929c" stroke-width="2"/>
+      <circle cx="912" cy="266" r="7" fill="#8e1b2e"/><circle cx="936" cy="266" r="7" fill="#8e1b2e"/><circle cx="1104" cy="266" r="7" fill="#8e1b2e"/><circle cx="1128" cy="266" r="7" fill="#8e1b2e"/>
+      <rect x="908" y="282" width="224" height="88" rx="10" fill="#3d3f48"/>
+      <rect x="926" y="300" width="188" height="54" rx="8" fill="url(#oven)"/>
+      <rect x="930" y="286" width="180" height="6" rx="3" fill="#e4e7eb"/>
+
+      <!-- counter -->
+      <rect x="220" y="282" width="650" height="18" rx="5" fill="#f9d6b8"/>
+      <rect x="230" y="300" width="632" height="86" fill="url(#wood)"/>
+      <rect x="246" y="310" width="190" height="66" rx="8" fill="none" stroke="#c47a58" stroke-width="3"/>
+      <rect x="450" y="310" width="190" height="66" rx="8" fill="none" stroke="#c47a58" stroke-width="3"/>
+      <rect x="654" y="310" width="194" height="66" rx="8" fill="none" stroke="#c47a58" stroke-width="3"/>
+      <circle cx="424" cy="343" r="5" fill="#c47a58"/><circle cx="462" cy="343" r="5" fill="#c47a58"/><circle cx="666" cy="343" r="5" fill="#c47a58"/>
+      <rect x="284" y="270" width="130" height="14" rx="6" fill="#e8a979"/>
+      <circle cx="310" cy="262" r="11" fill="#ff5d6c"/><path d="M304 252l6 4 6-4" stroke="#3aa35a" stroke-width="3" fill="none"/>
+      <circle cx="334" cy="265" r="8" fill="#ff5d6c"/>
+      <path d="M352 266l50-6-2 8z" fill="#ff9a3c"/><path d="M400 258l10-6M402 262l10 0" stroke="#3aa35a" stroke-width="3" stroke-linecap="round"/>
+      <path d="M496 282c0-22 16-30 36-30s36 8 36 30z" fill="#fff" stroke="#8a929c" stroke-width="2"/>
+      <path d="M540 254l22-34" stroke="#8a929c" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="566" cy="214" rx="7" ry="11" fill="none" stroke="#8a929c" stroke-width="3" transform="rotate(34 566 214)"/>
+      <rect x="752" y="276" width="76" height="6" rx="3" fill="#fff"/><rect x="786" y="262" width="8" height="16" fill="#fff"/>
+      <rect x="760" y="226" width="60" height="36" rx="6" fill="#7a4a35"/>
+      <rect x="760" y="226" width="60" height="16" rx="6" fill="#ffc1e6"/>
+      <path d="M762 240q6 10 10 0q6 12 12 0q6 10 12 0q6 12 12 0q4 8 10 0" fill="#ffc1e6"/>
+      <circle cx="790" cy="220" r="7" fill="#ff3d6e"/><path d="M790 213q4-8 10-8" stroke="#3aa35a" stroke-width="2" fill="none"/>
+
+      <!-- floor -->
+      <rect y="386" width="1200" height="74" fill="url(#floor)"/>
+      <rect y="386" width="1200" height="6" fill="#3a0d17" opacity=".35"/>
+
+      <!-- plant -->
+      <g class="plant" transform="translate(470 0)"><path d="M60 456l-8-60h88l-8 60z" fill="#fff0f8" stroke="#c98fb6" stroke-width="2"/>
+      <g fill="#43b05c" stroke="#2c7d42" stroke-width="2">
+        <ellipse cx="72" cy="360" rx="16" ry="36" transform="rotate(-38 72 360)"/>
+        <ellipse cx="124" cy="358" rx="16" ry="36" transform="rotate(36 124 358)"/>
+        <ellipse cx="98" cy="340" rx="16" ry="40"/>
+        <ellipse cx="58" cy="388" rx="12" ry="26" transform="rotate(-70 58 388)"/>
+        <ellipse cx="140" cy="388" rx="12" ry="26" transform="rotate(70 140 388)"/>
+      </g></g>
+    </svg></template>
+
+<script>
+/* ===================== данные ===================== */
+const LOOKS = [
+  {skin:'#f6c7a6', ear:'#eab08f', hair:'#7a4322', style:'bangs'},
+  {skin:'#efbf9b', ear:'#dfa883', hair:'#2d1f3d', style:'short'},
+  {skin:'#c68a66', ear:'#b27654', hair:'#1f1730', style:'curly'},
+  {skin:'#ffdcc2', ear:'#f2c4a4', hair:'#e2a24a', style:'long'}
+];
+function playerSVG(i){
+  const L = LOOKS[i];
+  let back = '', front = '';
+  if (L.style==='long') back = `<path d="M70 96Q62 150 66 200Q90 214 110 210Q130 214 154 200Q158 150 150 96Z" fill="${L.hair}"/>`;
+  if (L.style==='bangs') front = `<path d="M72 92Q92 112 112 96Q132 110 148 92L148 104Q128 116 112 106Q92 118 72 104Z" fill="${L.hair}"/>`;
+  if (L.style==='short') front = `<path d="M72 92L74 126L82 128L84 98ZM148 92L146 126L138 128L136 98Z" fill="${L.hair}"/><path d="M74 92Q110 106 146 92L146 100Q110 112 74 100Z" fill="${L.hair}"/>`;
+  if (L.style==='curly') front = [76,88,100,112,124,136,146].map(x=>`<circle cx="${x}" cy="${98+(x%2?2:0)}" r="9" fill="${L.hair}"/>`).join('') + `<circle cx="72" cy="112" r="8" fill="${L.hair}"/><circle cx="148" cy="112" r="8" fill="${L.hair}"/>`;
+  if (L.style==='long') front = `<path d="M72 92Q110 108 148 92L150 130Q144 108 140 104Q110 112 80 104Q76 110 70 130Z" fill="${L.hair}"/>`;
+  return `<svg viewBox="0 0 220 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Шеф — твой персонаж">
+<ellipse cx="110" cy="392" rx="72" ry="8" fill="#3a0d17" opacity=".28"/>
+<path d="M84 300L82 380H104L108 300Z" fill="#2b2b33"/><path d="M112 300L116 380H138L136 300Z" fill="#2b2b33"/>
+<path d="M64 378q0-10 14-10h26v20H66z" fill="#ff7a3d"/><path d="M116 368h26q14 0 14 10v10h-40z" fill="#ff7a3d"/>
+<rect x="64" y="384" width="42" height="5" rx="2.5" fill="#fff"/><rect x="114" y="384" width="42" height="5" rx="2.5" fill="#fff"/>
+${back}
+<path d="M58 194Q64 172 92 166L128 166Q156 172 162 194L166 302Q110 312 54 302Z" fill="#fbf8ff" stroke="#3a0d17" stroke-width="2"/>
+<path d="M112 172L124 300" stroke="#e6dcd8" stroke-width="3"/>
+<g fill="#ff2f73" stroke="#a3123f" stroke-width="1.2"><circle cx="100" cy="202" r="4.5"/><circle cx="124" cy="202" r="4.5"/><circle cx="102" cy="226" r="4.5"/><circle cx="126" cy="226" r="4.5"/><circle cx="104" cy="250" r="4.5"/><circle cx="128" cy="250" r="4.5"/></g>
+<path d="M70 262H150L158 334Q110 344 62 334Z" fill="#8e1b2e" stroke="#3a0d17" stroke-width="2"/>
+<rect x="96" y="284" width="30" height="22" rx="5" fill="#6f1323"/>
+<rect x="99" y="146" width="22" height="24" rx="8" fill="${L.ear}"/>
+<path d="M92 164Q110 184 128 164L124 180Q110 190 96 180Z" fill="#ff2f73" stroke="#a3123f" stroke-width="1.5"/>
+<path d="M104 180l6 16 6-16z" fill="#ff2f73" stroke="#a3123f" stroke-width="1.5"/>
+<path d="M60 196Q44 244 54 288" stroke="#fbf8ff" stroke-width="22" stroke-linecap="round" fill="none"/>
+<path d="M60 196Q44 244 54 288" stroke="#3a0d17" stroke-width="25" stroke-linecap="round" fill="none" opacity=".12"/>
+<circle cx="55" cy="293" r="10" fill="${L.skin}"/>
+<path d="M160 196Q190 206 184 160" stroke="#fbf8ff" stroke-width="22" stroke-linecap="round" fill="none"/>
+<path d="M188 158L200 92" stroke="#c98463" stroke-width="6" stroke-linecap="round"/>
+<ellipse cx="202" cy="84" rx="10" ry="14" fill="#e8a979" stroke="#c98463" stroke-width="2" transform="rotate(10 202 84)"/>
+<circle cx="185" cy="158" r="10" fill="${L.skin}"/>
+<circle cx="72" cy="122" r="7" fill="${L.ear}"/><circle cx="148" cy="122" r="7" fill="${L.ear}"/>
+<ellipse cx="110" cy="120" rx="38" ry="42" fill="${L.skin}"/>
+${front}
+<g fill="#fff" stroke="#3a0d17" stroke-width="2"><circle cx="84" cy="58" r="19"/><circle cx="136" cy="58" r="19"/><circle cx="110" cy="46" r="23"/></g>
+<path d="M74 60h72v14H74z" fill="#fff"/>
+<rect x="72" y="70" width="76" height="26" rx="7" fill="#fff" stroke="#3a0d17" stroke-width="2"/>
+<path d="M78 84h64" stroke="#ff2f73" stroke-width="3" stroke-linecap="round"/>
+<path d="M88 110q8-5 16-1M116 109q8-4 16 1" stroke="#3a0d17" stroke-width="3" fill="none" stroke-linecap="round"/>
+<ellipse cx="96" cy="124" rx="5" ry="6.5" fill="#2b1840"/><ellipse cx="124" cy="124" rx="5" ry="6.5" fill="#2b1840"/>
+<circle cx="98" cy="121.5" r="1.9" fill="#fff"/><circle cx="126" cy="121.5" r="1.9" fill="#fff"/>
+<ellipse cx="86" cy="140" rx="7" ry="4" fill="#ff8fb8" opacity=".6"/><ellipse cx="134" cy="140" rx="7" ry="4" fill="#ff8fb8" opacity=".6"/>
+<path d="M110 128q-3 7 2 9" stroke="#b97a5e" stroke-width="2" fill="none" stroke-linecap="round"/>
+<path d="M97 144q13 13 26 0z" fill="#8a2350" stroke="#8a2350" stroke-width="2" stroke-linejoin="round"/>
+<path d="M102 149q8 4 16 0" stroke="#ff9db8" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>`;
+}
+const FORMS = [
+ {id:'ip', short:'ИП', name:'Индивидуальный предприниматель', emoji:'🧑‍🍳', color:'#ffe1c7', kind:'Не юридическое лицо',
+  rows:[['Кто','один гражданин, зарегистрированный в ЕГРИП'],
+        ['Капитал','не нужен — бизнес ведётся на личное имущество'],
+        ['Отвечает ли по долгам','<b>да — всем своим имуществом</b>, кроме того, на которое по закону нельзя обратить взыскание (например, единственное жильё)'],
+        ['Управление','всё решает сам'],
+        ['Документы','учредительных документов нет — регистрируется сам гражданин']],
+  law:'ст. 23–25 ГК РФ', kitchen:'Кофейня-фургончик, где хозяин — он же бариста, кассир и ответчик в суде.',
+  trap:'ИП — <b>не юридическое лицо</b>, хотя к его бизнесу применяются правила о коммерческих организациях.'},
+ {id:'pt', short:'ПТ', name:'Полное товарищество', emoji:'🤝', color:'#fff1a8', kind:'Хозяйственное товарищество',
+  rows:[['Кто','<b>только ИП и (или) коммерческие организации</b>; лицо может быть участником только одного полного товарищества'],
+        ['Капитал','<b>складочный</b> — из вкладов участников'],
+        ['Управление','дела ведут сами участники; решения — по общему согласию'],
+        ['Отвечает ли по долгам','<b>да — солидарно и субсидиарно, всем своим имуществом</b>'],
+        ['Прибыль и убытки','делятся пропорционально долям в складочном капитале'],
+        ['Учредительный документ','<b>учредительный договор</b>'],
+        ['Название','имена всех участников или одного + «и компания»']],
+  law:'ст. 69–81 ГК РФ', kitchen:'Мушкетёры на кухне: один за всех — и все за долги ресторана.',
+  trap:'Участники рискуют не только вкладом, а всем имуществом — вплоть до машины и дачи.'},
+ {id:'tv', short:'ТнВ', name:'Товарищество на вере (коммандитное)', emoji:'💼', color:'#fff1a8', kind:'Хозяйственное товарищество',
+  rows:[['Кто','<b>полные товарищи</b> (ИП и/или коммерческие организации) + <b>вкладчики-коммандитисты</b> (любые граждане и юрлица)'],
+        ['Капитал','<b>складочный</b> — из вкладов участников'],
+        ['Управление','ведут полные товарищи; <b>вкладчики в управлении не участвуют</b>'],
+        ['Отвечает ли по долгам','полные товарищи — <b>да, всем имуществом</b>; вкладчики — <b>нет</b>'],
+        ['Чем рискуют вкладчики','только внесёнными вкладами'],
+        ['Учредительный документ','<b>учредительный договор</b>']],
+  law:'ст. 82–86 ГК РФ', kitchen:'Знакомая вложила деньги в ресторан, получает часть прибыли, но на кухню не заходит и за долги не отвечает.',
+  trap:'Слово «вера»: вкладчики доверяют полным товарищам и деньги, и управление.'},
+ {id:'ooo', short:'ООО', name:'Общество с ограниченной ответственностью', emoji:'🍲', color:'#d9f5c2', kind:'Хозяйственное общество',
+  rows:[['Кто','<b>от 1 до 50</b> граждан и (или) юрлиц'],
+        ['Капитал','<b>уставный</b>, разделён на <b>доли</b>; минимум 10 000 ₽'],
+        ['Отвечает ли по долгам','<b>нет</b>'],
+        ['Чем рискуют участники','в пределах стоимости своих долей'],
+        ['Учредительный документ','<b>устав</b>']],
+  law:'ст. 87–94 ГК РФ, ФЗ «Об обществах с ограниченной ответственностью»', kitchen:'Самый популярный выбор для кафе: ресторан прогорел — квартира шефа цела.',
+  trap:'Если участников станет больше 50, за год ООО должно преобразоваться в АО или производственный кооператив.'},
+ {id:'ao', short:'АО', name:'Акционерное общество (публичное и непубличное)', emoji:'📈', color:'#d9f5c2', kind:'Хозяйственное общество',
+  rows:[['Кто','<b>акционеры</b> — граждане и (или) юрлица'],
+        ['Капитал','<b>уставный</b>, разделён на определённое число <b>акций</b>'],
+        ['Отвечает ли по долгам','<b>нет</b>'],
+        ['Чем рискуют участники','в пределах стоимости своих акций; доход — <b>дивиденды</b>'],
+        ['ПАО и АО','<b>ПАО</b> — акции размещаются и обращаются публично (на бирже); <b>непубличное АО</b> — нет'],
+        ['Учредительный документ','<b>устав</b>']],
+  law:'ст. 96–97 ГК РФ, ФЗ «Об акционерных обществах»', kitchen:'Огромная сеть бургерных, акции которой может купить любой на бирже.',
+  trap:'Минимальный уставный капитал ПАО — 100 000 ₽, непубличного АО — 10 000 ₽.'},
+ {id:'hp', short:'ХП', name:'Хозяйственное партнёрство', emoji:'🧪', color:'#d3d8ff', kind:'Хозяйственное партнёрство',
+  rows:[['Кто','<b>от 2 до 50</b> граждан и (или) юрлиц'],
+        ['Капитал','<b>складочный</b> — из вкладов участников'],
+        ['Управление','по <b>соглашению об управлении партнёрством</b>'],
+        ['Отвечает ли по долгам','<b>нет</b>'],
+        ['Чем рискуют участники','в пределах внесённых вкладов'],
+        ['Учредительный документ','<b>устав</b>']],
+  law:'ст. 50 ГК РФ, ФЗ «О хозяйственных партнёрствах»', kitchen:'Лаборатория молекулярной кухни, которая тихо изобретает новый соус.',
+  trap:'Партнёрству <b>запрещено рекламировать</b> свою деятельность и выпускать облигации — это форма для инновационных проектов.'},
+ {id:'pk', short:'ПК', name:'Производственный кооператив (артель)', emoji:'🥖', color:'#ffd0ec', kind:'Корпоративная коммерческая организация',
+  rows:[['Кто','<b>не менее 5 граждан</b> (юрлица — если разрешает устав); <b>обязательное личное трудовое участие</b>'],
+        ['Капитал','<b>паевой фонд</b> из паевых взносов членов'],
+        ['Управление','<b>один член — один голос</b>'],
+        ['Прибыль','делится по трудовому участию'],
+        ['Отвечает ли по долгам','<b>да — субсидиарно</b>, в размере и порядке, установленных законом и уставом'],
+        ['Учредительный документ','<b>устав</b>']],
+  law:'ст. 106.1–106.6 ГК РФ, ФЗ «О производственных кооперативах»', kitchen:'Пятеро пекарей вместе месят тесто и делят прибыль по тому, кто сколько напёк.',
+  trap:'<b>Производственный</b> кооператив — коммерческий, <b>потребительский</b> — некоммерческий.'},
+ {id:'kfh', short:'КФХ', name:'Крестьянское (фермерское) хозяйство', emoji:'🥕', color:'#c9f3ee', kind:'Корпоративная коммерческая организация',
+  rows:[['Кто','граждане, ведущие совместную деятельность в <b>сельском хозяйстве</b> (обычно родственники); <b>личное трудовое участие</b>'],
+        ['Капитал','имущественные вклады членов; имущество принадлежит КФХ <b>на праве собственности</b>'],
+        ['Отвечает ли по долгам','<b>да — субсидиарно</b>'],
+        ['Ограничение','гражданин может быть членом только одного КФХ-юрлица'],
+        ['Учредительный документ','<b>устав</b>']],
+  law:'ст. 86.1 ГК РФ', kitchen:'Семья выращивает томаты и зелень и привозит их тебе на кухню.',
+  trap:'КФХ может существовать и без образования юрлица — юрлицом оно становится, только если члены так решили.'},
+ {id:'gup', short:'ГУП/МУП', name:'Государственное и муниципальное унитарное предприятие', emoji:'🏫', color:'#fff4bf', kind:'Унитарная коммерческая организация',
+  rows:[['Кто','<b>участников нет</b>. Учредитель и собственник имущества — РФ, субъект РФ или муниципальное образование'],
+        ['Капитал','<b>уставный фонд</b> формирует собственник; имущество <b>неделимо</b>'],
+        ['Право на имущество','не собственность, а <b>хозяйственное ведение</b>: пользуется и распоряжается, но крупные сделки — только с согласия собственника'],
+        ['Кто отвечает по долгам','само предприятие — своим имуществом; <b>собственник не отвечает</b>'],
+        ['Учредительный документ','<b>устав</b>']],
+  law:'ст. 113–114 ГК РФ', kitchen:'Городская столовая при школе: кухня есть, а собственник — город.',
+  trap:'Частный ресторатор <b>не может</b> создать унитарное предприятие.'}
+];
+const STATIONS = [
+ {id:'ip', guest:'Бариста Лёва', em:'☕',
+  intro:'Привет, шеф! Я варю кофе в фургончике у твоего ресторана. Работаю один, никакой организации — но хочу всё по закону. Мне сказали стать ИП. А что это вообще значит?',
+  items:[
+   {q:'Кто может быть индивидуальным предпринимателем?', opts:['Один гражданин','Не менее двух граждан','Только юридическое лицо','От 1 до 50 граждан и юрлиц'], a:0, row:['Кто','один гражданин'],
+    why:'ИП — это гражданин, который занимается предпринимательской деятельностью без образования юридического лица (ст. 23 ГК РФ).'},
+   {q:'Лёва станет юридическим лицом, когда зарегистрируется как ИП?', opts:['Да, как любое ООО','Нет — он остаётся гражданином-предпринимателем','Да, если наймёт сотрудников'], a:1, row:['Статус','не юрлицо'],
+    why:'ИП — не юрлицо. Любимая ловушка ЕГЭ: к его бизнесу лишь применяются правила о коммерческих организациях.'},
+   {q:'В каком реестре регистрируют ИП?', opts:['ЕГРЮЛ','ЕГРИП','Реестр акционеров'], a:1, row:['Реестр','ЕГРИП'],
+    why:'ЕГРИП — Единый государственный реестр индивидуальных предпринимателей. ЕГРЮЛ — для юрлиц.'},
+   {q:'Чем Лёва отвечает по долгам своего бизнеса?', opts:['Только деньгами на бизнес-счёте','Всем своим имуществом, кроме того, на которое нельзя обратить взыскание','Ничем — за ИП отвечает государство'], a:1, row:['Ответственность','всем своим имуществом'],
+    why:'Ст. 24 ГК РФ: гражданин отвечает всем своим имуществом. Исключение — то, на что по закону нельзя обратить взыскание, например единственное жильё.'},
+   {q:'Какой учредительный документ нужен Лёве?', opts:['Устав','Учредительный договор','Никакого — регистрируется сам гражданин'], a:2, row:['Документы','учредительных нет'],
+    why:'У ИП нет учредительных документов: регистрируется сам гражданин.'},
+   {q:'Фургончик задолжал поставщику зёрен 300 000 ₽, а на счёте всего 100 000 ₽. Может ли поставщик забрать в счёт долга машину Лёвы?', opts:['Да: ИП отвечает всем своим имуществом','Нет: долг бизнеса — не личный долг Лёвы','Только с согласия Лёвы'], a:0,
+    why:'Для ИП нет границы между «бизнесом» и «личным»: машина — часть его имущества, и на неё можно обратить взыскание.'}
+  ]},
+ {id:'pt', guest:'Кондитеры Маша и Даша', em:'🧁',
+  intro:'Мы обе — ИП и печём торты. Хотим объединиться, вести дела вместе и решать всё вместе. Друг другу доверяем настолько, что готовы отвечать по долгам чем угодно. Нам советуют полное товарищество.',
+  items:[
+   {q:'Кто может быть участником полного товарищества?', opts:['Любые граждане','Только ИП и (или) коммерческие организации','Только некоммерческие организации','Только государство'], a:1, row:['Участники','только ИП и коммерческие организации'],
+    why:'Ст. 69 ГК РФ: участниками полного товарищества могут быть только индивидуальные предприниматели и (или) коммерческие организации. Поэтому Маше и Даше и пригодился статус ИП.'},
+   {q:'Из чего складывается капитал товарищества?', opts:['Уставный капитал из акций','Складочный капитал из вкладов участников','Паевой фонд','Уставный фонд от государства'], a:1, row:['Капитал','складочный'],
+    why:'У хозяйственных товариществ — складочный капитал из вкладов участников. Прибыль и убытки делятся пропорционально долям в нём.'},
+   {q:'Чем рискуют Маша и Даша, если у товарищества появятся долги?', opts:['Только своими вкладами','Всем своим имуществом — солидарно и субсидиарно','Ничем'], a:1, row:['Ответственность','солидарно и субсидиарно, всем имуществом'],
+    why:'Ст. 75 ГК РФ: участники полного товарищества солидарно несут субсидиарную ответственность своим имуществом. Субсидиарная — дополнительная: сначала платит товарищество, не хватило — участники.'},
+   {q:'На каком документе держится полное товарищество?', opts:['Устав','Учредительный договор','Соглашение об управлении'], a:1, row:['Документ','учредительный договор'],
+    why:'Учредительный договор — только у хозяйственных товариществ (полного и на вере). Все остальные юрлица действуют на основании устава (ст. 52 ГК РФ).'},
+   {q:'Товарищество не может вернуть поставщику 400 000 ₽. Поставщик требует всю сумму только с Даши. Законно?', opts:['Да: ответственность солидарная — можно требовать всё с любого участника','Нет: с Даши — только половину','Нет: требовать можно только с товарищества'], a:0,
+    why:'Солидарная ответственность — кредитор вправе потребовать весь долг с любого из участников. Потом Даша сможет потребовать с Маши её часть.'},
+   {q:'Маша уже участница товарищества «Маша, Даша и компания». Её зовут в ещё одно полное товарищество. Можно?', opts:['Да, хоть в десять','Да, если Даша согласится','Нет: лицо может быть участником только одного полного товарищества'], a:2,
+    why:'Ст. 69 ГК РФ — абсолютный запрет: только одно полное товарищество, ведь участник отвечает по его долгам всем своим имуществом.'}
+  ]},
+ {id:'tv', guest:'Шеф Гриша и крёстная Нина', em:'💼',
+  intro:'Гриша: «Я хочу свой ресторан, готов вести дела и отвечать всем». Нина: «А я дам денег, но на кухню — ни ногой, и рисковать больше вклада не собираюсь». Им подходит товарищество на вере.',
+  items:[
+   {q:'Из кого состоит товарищество на вере?', opts:['Только из вкладчиков','Из полных товарищей и вкладчиков-коммандитистов','Из акционеров','Из не менее 5 работающих членов'], a:1, row:['Состав','полные товарищи + вкладчики'],
+    why:'Ст. 82 ГК РФ: в товариществе на вере (коммандитном) есть полные товарищи и вкладчики-коммандитисты.'},
+   {q:'Кто ведёт дела товарищества?', opts:['Полные товарищи','Вкладчики','Все поровну','Директор, которого назначает государство'], a:0, row:['Управление','только полные товарищи'],
+    why:'Дела ведут полные товарищи. Вкладчики в управлении и ведении дел не участвуют.'},
+   {q:'Чем рискует вкладчица Нина?', opts:['Всем своим имуществом','Только внесённым вкладом','Ничем, даже вкладом'], a:1, row:['Риск вкладчиков','в пределах вклада'],
+    why:'Вкладчики несут риск убытков только в пределах внесённых вкладов.'},
+   {q:'Чем рискует полный товарищ Гриша?', opts:['Только вкладом','Всем своим имуществом','Ничем'], a:1, row:['Риск полных товарищей','всё имущество'],
+    why:'Полные товарищи в товариществе на вере отвечают так же, как в полном товариществе, — всем своим имуществом.'},
+   {q:'Какой учредительный документ у товарищества на вере?', opts:['Устав','Учредительный договор','Соглашение об управлении'], a:1, row:['Документ','учредительный договор'],
+    why:'Это хозяйственное товарищество, а значит — учредительный договор.'},
+   {q:'Нина требует права решать, какие блюда будут в меню. Права ли она?', opts:['Да, она же вложила деньги','Нет: вкладчики не участвуют в управлении и ведении дел'], a:1,
+    why:'Вкладчик получает часть прибыли, но управлять не вправе — для того он и «верит» полным товарищам.'}
+  ]},
+ {id:'ooo', guest:'Соседка Аня', em:'🥟',
+  intro:'Открываю пельменную! Хочу, чтобы она была отдельной организацией и чтобы при неудаче у меня не забрали квартиру. Все советуют ООО.',
+  items:[
+   {q:'Сколько может быть участников у ООО?', opts:['Ровно один','От 1 до 50','Не менее 5','Без ограничений'], a:1, row:['Участники','от 1 до 50 граждан и юрлиц'],
+    why:'ООО может создать даже один человек, а участников не может быть больше 50 (ФЗ «Об ООО»).'},
+   {q:'Как называется капитал ООО и на что он делится?', opts:['Уставный — на доли','Уставный — на акции','Складочный — на вклады','Паевой фонд — на паи'], a:0, row:['Капитал','уставный, разделён на доли'],
+    why:'У ООО уставный капитал, разделённый на доли. Акции — у АО, складочный капитал — у товариществ, паевой фонд — у кооперативов.'},
+   {q:'Какой минимальный уставный капитал у ООО?', opts:['10 000 ₽','100 000 ₽','1 000 000 ₽','Не нужен вовсе'], a:0, row:['Минимум капитала','10 000 ₽'],
+    why:'Минимальный уставный капитал ООО — 10 000 ₽.'},
+   {q:'Пельменная задолжала 2 млн ₽. Придут ли за квартирой Ани?', opts:['Да, участники отвечают всем имуществом','Нет: участники рискуют только стоимостью своих долей','Да, субсидиарно'], a:1, row:['Ответственность','нет — риск в пределах долей'],
+    why:'Ст. 87 ГК РФ: участники ООО не отвечают по его обязательствам и несут риск убытков в пределах стоимости своих долей.'},
+   {q:'Какой учредительный документ у ООО?', opts:['Учредительный договор','Устав','Свидетельство ЕГРИП'], a:1, row:['Документ','устав'],
+    why:'ООО действует на основании устава. Учредительный договор — только у товариществ.'},
+   {q:'В пельменной уже 50 участников, и 51-й повар хочет купить долю. Что говорит закон?', opts:['Ограничений нет — пусть входит','Если участников станет больше 50, за год придётся преобразоваться в АО или производственный кооператив','Можно, если новичок зарегистрирован как ИП'], a:1,
+    why:'ФЗ «Об ООО»: участников не более 50. Если их стало больше, в течение года общество должно преобразоваться в АО или производственный кооператив.'}
+  ]},
+ {id:'ao', guest:'ПАО «Бургер-Холдинг»', em:'🍔',
+  intro:'У нас двести бургерных по всей стране. Хотим продать акции на бирже и собрать деньги на новые точки. Что нам нужно знать про акционерное общество?',
+  items:[
+   {q:'На что разделён уставный капитал АО?', opts:['На доли','На акции','На паи','На вклады'], a:1, row:['Капитал','уставный, разделён на акции'],
+    why:'Уставный капитал АО разделён на определённое число акций (ст. 96 ГК РФ).'},
+   {q:'Чем рискуют акционеры, если у холдинга появятся долги?', opts:['Всем своим имуществом','Стоимостью своих акций','Отвечают субсидиарно'], a:1, row:['Ответственность','нет — риск в пределах акций'],
+    why:'Акционеры не отвечают по обязательствам общества и несут риск убытков в пределах стоимости своих акций.'},
+   {q:'Как называется доход акционера от прибыли общества?', opts:['Дивиденды','Паевой взнос','Зарплата','Субсидия'], a:0, row:['Доход','дивиденды'],
+    why:'Часть прибыли, которую общество распределяет между акционерами, — дивиденды.'},
+   {q:'Чем публичное АО отличается от непубличного?', opts:['Акции ПАО размещаются и обращаются публично — например, на бирже','В ПАО не больше 50 акционеров','ПАО принадлежит государству'], a:0, row:['ПАО','акции обращаются публично'],
+    why:'Публичность — про акции: они размещаются и обращаются публично. У непубличного АО — нет.'},
+   {q:'Какой минимальный уставный капитал у ПАО?', opts:['10 000 ₽','100 000 ₽','1 000 000 ₽'], a:1, row:['Минимум для ПАО','100 000 ₽ (непубличное — 10 000 ₽)'],
+    why:'ФЗ «Об АО»: публичное общество — не менее 100 000 ₽, непубличное — не менее 10 000 ₽. Учредительный документ у любого АО — устав.'},
+   {q:'Повар Стёпа считает: раз общество «публичное», значит, оно государственное. Прав ли он?', opts:['Да, публичное — значит государственное','Нет: «публичное» — про публичное обращение акций, а не про собственника'], a:1,
+    why:'Собственниками ПАО могут быть любые граждане и компании. Государственные предприятия — это унитарные предприятия, о них ещё узнаешь.'}
+  ]},
+ {id:'hp', guest:'Стартап «Съедобная упаковка»', em:'🧪',
+  intro:'Мы изобретаем съедобные стаканчики. Нам нужна гибкая схема управления, а реклама пока не нужна — сидим в лаборатории. Говорят, есть особая форма — хозяйственное партнёрство.',
+  items:[
+   {q:'Сколько участников может быть у хозяйственного партнёрства?', opts:['От 2 до 50','От 1 до 50','Не менее 5','Без ограничений'], a:0, row:['Участники','от 2 до 50 граждан и юрлиц'],
+    why:'ФЗ «О хозяйственных партнёрствах»: от двух до пятидесяти граждан и (или) юрлиц.'},
+   {q:'Как управляется партнёрство?', opts:['По соглашению об управлении партнёрством','Общим собранием акционеров','Один член — один голос','Решает собственник-государство'], a:0, row:['Управление','соглашение об управлении'],
+    why:'Главная особенность — соглашение об управлении партнёрством: в нём гибко прописывают права и обязанности участников.'},
+   {q:'Отвечают ли участники по долгам партнёрства?', opts:['Да, всем имуществом','Нет — рискуют в пределах внесённых вкладов','Да, субсидиарно'], a:1, row:['Ответственность','нет — риск в пределах вкладов'],
+    why:'Участники партнёрства не отвечают по его обязательствам и рискуют в пределах внесённых вкладов.'},
+   {q:'Что хозяйственному партнёрству запрещено?', opts:['Рекламировать свою деятельность и выпускать облигации','Иметь больше двух участников','Получать прибыль'], a:0, row:['Запрет','реклама и облигации'],
+    why:'Партнёрство не вправе рекламировать свою деятельность и выпускать облигации — это форма для инновационных проектов, а не для ресторана с вывеской.'},
+   {q:'Какой у партнёрства учредительный документ?', opts:['Соглашение об управлении','Устав','Учредительный договор'], a:1, row:['Документ','устав'],
+    why:'Ловушка! Соглашение об управлении — важный, но не учредительный документ. Учредительный — устав.'}
+  ]},
+ {id:'pk', guest:'Артель пекарей «Тёплый хлеб»', em:'🥖',
+  intro:'Нас семеро, и все работаем руками у печи. Хотим, чтобы у каждого был один голос, а прибыль делилась по тому, кто сколько напёк. Это производственный кооператив, он же артель.',
+  items:[
+   {q:'Сколько членов нужно как минимум?', opts:['2','5','10','1'], a:1, row:['Члены','не менее 5 граждан'],
+    why:'ФЗ «О производственных кооперативах»: число членов не может быть менее пяти.'},
+   {q:'Можно ли быть членом артели, только вложив деньги, но не работая?', opts:['Да, достаточно вложить деньги','Нет: основа артели — личное трудовое участие членов'], a:1, row:['Участие','личный труд'],
+    why:'Производственный кооператив — объединение граждан для совместной деятельности на основе личного трудового участия (ст. 106.1 ГК РФ).'},
+   {q:'Как голосуют на общем собрании?', opts:['Один член — один голос','Пропорционально размеру пая','Пропорционально числу акций'], a:0, row:['Голос','один член — один голос'],
+    why:'Неважно, у кого пай больше: у каждого члена кооператива один голос.'},
+   {q:'Как делится прибыль?', opts:['По трудовому участию','По размеру доли в уставном капитале','Дивидендами по акциям'], a:0, row:['Прибыль','по трудовому участию'],
+    why:'Прибыль распределяется в соответствии с трудовым участием, если уставом не предусмотрено иное.'},
+   {q:'Как называется имущество, которое складывают члены?', opts:['Паевой фонд из паевых взносов','Уставный капитал из акций','Складочный капитал'], a:0, row:['Капитал','паевой фонд'],
+    why:'У кооператива — паевой фонд, который складывается из паевых взносов членов.'},
+   {q:'Пекарня задолжала, своего имущества не хватает. Отвечают ли члены?', opts:['Нет, никогда','Да, субсидиарно — в размере и порядке, установленных законом и уставом','Да, солидарно всем имуществом без ограничений'], a:1,
+    why:'Ст. 106.1 ГК РФ: члены кооператива несут субсидиарную ответственность по его обязательствам в размере и порядке, предусмотренных законом и уставом.'}
+  ]},
+ {id:'kfh', guest:'Семья Зелёных с фермы', em:'🥕',
+  intro:'Мы всей семьёй выращиваем зелень и томаты. Хотим поставлять их в рестораны официально — как юридическое лицо. Нам подходит крестьянское (фермерское) хозяйство.',
+  items:[
+   {q:'Для какой деятельности создают КФХ?', opts:['Сельское хозяйство','Любая торговля','Банковская деятельность'], a:0, row:['Сфера','сельское хозяйство'],
+    why:'Ст. 86.1 ГК РФ: КФХ — граждане, ведущие совместную деятельность в области сельского хозяйства.'},
+   {q:'Кто члены КФХ?', opts:['Граждане с личным трудовым участием, обычно родственники','Только юридические лица','Инвесторы, которые не работают на ферме'], a:0, row:['Члены','граждане с личным трудом'],
+    why:'Члены КФХ лично работают в хозяйстве — чаще всего это одна семья.'},
+   {q:'Кому принадлежит имущество КФХ, созданного как юрлицо?', opts:['Самому КФХ — на праве собственности','Государству','Каждому члену по отдельности'], a:0, row:['Имущество','собственность КФХ'],
+    why:'Имущество КФХ принадлежит ему на праве собственности.'},
+   {q:'Если у фермы долги, отвечают ли её члены?', opts:['Нет','Да, субсидиарно'], a:1, row:['Ответственность','субсидиарная'],
+    why:'Члены КФХ несут субсидиарную ответственность по его обязательствам.'},
+   {q:'Дядя Пётр уже член одного КФХ-юрлица. Можно ли ему вступить во второе?', opts:['Да, без ограничений','Нет: гражданин может быть членом только одного КФХ, созданного как юрлицо'], a:1,
+    why:'Это прямо сказано в ст. 86.1 ГК РФ.'}
+  ]},
+ {id:'gup', guest:'Школьная столовая №7', em:'🏫',
+  intro:'Здравствуйте! Нас создал город. Здание, плиты и кастрюли — городские, а мы ими только управляем. Мы — муниципальное унитарное предприятие.',
+  items:[
+   {q:'Кто учреждает унитарное предприятие и владеет его имуществом?', opts:['РФ, субъект РФ или муниципальное образование','Любой гражданин','Акционеры'], a:0, row:['Собственник','РФ, субъект РФ или муниципалитет'],
+    why:'Государственные унитарные предприятия создаёт РФ или субъект РФ, муниципальные — муниципальное образование.'},
+   {q:'Сколько участников у столовой?', opts:['Участников нет','От 1 до 50','Не менее 5'], a:0, row:['Участники','нет'],
+    why:'Унитарное предприятие — организация без участников: есть только собственник имущества.'},
+   {q:'На каком праве у столовой её плиты и здание?', opts:['На праве собственности','На праве хозяйственного ведения','В аренде у участников'], a:1, row:['Право на имущество','хозяйственное ведение'],
+    why:'Унитарное предприятие не собственник: имущество города закреплено за ним на праве хозяйственного ведения.'},
+   {q:'Можно ли разделить имущество столовой между поварами по вкладам?', opts:['Да, по вкладам','Нет: имущество неделимо'], a:1, row:['Имущество','неделимо'],
+    why:'Ст. 113 ГК РФ: имущество унитарного предприятия неделимо и не распределяется по вкладам (долям, паям), в том числе между работниками.'},
+   {q:'Столовая задолжала поставщику. Отвечает ли город?', opts:['Да, всегда','Нет: по своим долгам предприятие отвечает само, собственник не отвечает','Да, солидарно'], a:1, row:['Ответственность собственника','не отвечает'],
+    why:'Унитарное предприятие отвечает по своим обязательствам своим имуществом, а собственник — город — по его долгам не отвечает (ст. 113 ГК РФ).'},
+   {q:s=>`Шеф ${s.n} хочет открыть свой ресторан как МУП. Получится?`, opts:['Да, это просто','Нет: унитарное предприятие создаёт только государство или муниципалитет'], a:1,
+    why:'Частный предприниматель не может создать унитарное предприятие.'}
+  ]}
+];
+const STORY = {
+  ip: ["Я варю кофе в фургончике у метро. Работаю один: сам закупаю зёрна, сам варю, сам стою на кассе.",
+       "Я просто зарегистрировался как **индивидуальный предприниматель**. Организацию не создавал: я по-прежнему обычный гражданин, который занимается бизнесом, — **не юридическое лицо**. Ни устава, ни учредительного договора: **учредительных документов у ИП нет**. Уставный капитал тоже не нужен.",
+       "Тут всё серьёзно: по долгам фургончика я отвечаю **всем своим имуществом**. Не расплачусь с поставщиком — могут забрать даже мою машину. Не заберут только то, что запрещает закон, например **единственное жильё**."],
+  pt: ["Мы печём торты на заказ. Раньше каждая работала сама по себе как ИП, а потом решили объединиться.",
+       "Участниками **полного товарищества** могут быть **только ИП и коммерческие организации** — нам повезло, мы обе ИП. Заключили **учредительный договор**, сложили вклады в **складочный капитал**. Решения принимаем **по общему согласию**, прибыль и убытки делим по вкладам: кто вложил больше, тот больше получает, но и больше теряет. Назвались «Маша, Даша и компания».",
+       "Отвечаем **всем своим имуществом — солидарно и субсидиарно**. Сначала платит товарищество, а если не хватит — мы, и кредитор может потребовать **весь долг с любой из нас**. Поэтому быть участником можно **только одного** полного товарищества."],
+  tv: ["Гриша: «Я держу маленькое бистро». Нина: «А я его спонсор!»",
+       "Гриша — **полный товарищ**: он ведёт все дела. Нина — **вкладчица (коммандитистка)**: вложила деньги и получает часть прибыли, но **в управлении не участвует**. Капитал — **складочный**, учредительный документ — **учредительный договор**, как у полного товарищества.",
+       "Гриша отвечает по долгам **всем своим имуществом**. Нина рискует **только своим вкладом** — больше она ничего не потеряет."],
+  ooo: ["У меня пельменная на соседней улице.",
+       "Я открыла **ООО** одна — так можно: участников бывает **от 1 до 50**. Сформировала **уставный капитал** (минимум **10 000 ₽**), он делится **на доли**. Учредительный документ — **устав**. Если участников когда-нибудь станет больше 50, за год придётся преобразоваться в АО или производственный кооператив.",
+       "По долгам пельменной отвечает само ООО. Я **не отвечаю** по его долгам и рискую **только стоимостью своей доли** — квартиру за долги пельменной не заберут."],
+  ao: ["У нас двести бургерных по всей стране.",
+       "Мы **акционерное общество**: уставный капитал разделён **на акции**. Мы **публичное АО** — наши акции размещаются и обращаются публично, на бирже, поэтому минимальный капитал у нас **100 000 ₽**. У непубличного АО — **10 000 ₽**. Документ — **устав**. И нет, «публичное» не значит «государственное»: наши акционеры — обычные люди и компании.",
+       "Акционеры по долгам общества **не отвечают** — рискуют **только стоимостью своих акций**. Если дела идут хорошо, они получают часть прибыли — **дивиденды**."],
+  hp: ["Мы изобретаем съедобные стаканчики и пока сидим в лаборатории.",
+       "Мы **хозяйственное партнёрство**: нас может быть **от 2 до 50**. Права и обязанности расписали в **соглашении об управлении партнёрством** — это наша главная фишка. Но учредительный документ у нас — **устав**: соглашение учредительным не считается. **Рекламировать себя и выпускать облигации** партнёрству **нельзя**.",
+       "По долгам партнёрства мы **не отвечаем** — рискуем **только тем, что вложили**."],
+  pk: ["Нас семеро, и все стоят у печи.",
+       "Мы **производственный кооператив (артель)**. Нужно **не меньше 5 человек**, и каждый обязан **работать лично** — просто вложить деньги нельзя. Из паевых взносов собрали **паевой фонд**. Голосуем по правилу **«один член — один голос»**, прибыль делим **по трудовому участию**. Документ — **устав**. Мы коммерческая организация — в отличие от потребительского кооператива.",
+       "Если имущества кооператива не хватит, члены отвечают **субсидиарно — в размере и порядке, установленных законом и уставом**."],
+  kfh: ["Всей семьёй выращиваем зелень и томаты — ими кормят и в этом ресторане.",
+       "Мы создали **крестьянское (фермерское) хозяйство** для **сельскохозяйственной** работы. Все члены **работают сами**, обычно это родственники. Наше КФХ — юридическое лицо, и имущество принадлежит **самому хозяйству на праве собственности**. Состоять можно **только в одном** таком КФХ. Документ — **устав**.",
+       "Если имущества фермы не хватит, члены отвечают по её долгам **субсидиарно**."],
+  gup: ["Кормим школьников со всего района.",
+       "Нас создал город — мы **муниципальное унитарное предприятие**. **Участников у нас нет.** Здание, плиты и кастрюли — собственность города, нам их передали **в хозяйственное ведение**. Имущество **неделимо**. Частный человек такое предприятие создать не может. Документ — **устав**.",
+       "По своим долгам мы отвечаем **сами, своим имуществом**. Город по нашим долгам **не отвечает**."]
+};
+const TIPS = [
+  ["солидарно и субсидиарно", "Субсидиарно — дополнительно: сначала платит организация, не хватило — участники. Солидарно — кредитор может потребовать весь долг с любого участника."],
+  ["не юридическое лицо", "Юридическое лицо — организация со своим имуществом, которая отвечает им по долгам, действует от своего имени и может судиться. ИП — не организация, а гражданин."],
+  ["учредительный договор", "Учредительный договор — соглашение участников о создании организации и о том, как они вместе ведут дела. Есть только у полного товарищества и товарищества на вере."],
+  ["коммерческие организации", "Коммерческая организация — та, что работает ради прибыли: кафе, магазин, пекарня."],
+  ["складочный", "Складочный капитал — общая «копилка» из вкладов участников товарищества или партнёрства."],
+  ["уставный капитал", "Уставный капитал — стартовые деньги и имущество, которые вносят участники ООО или АО."],
+  ["паевой фонд", "Паевой фонд — имущество кооператива, сложенное из паевых взносов членов. Пай — доля члена в этом имуществе."],
+  ["дивиденды", "Дивиденды — часть прибыли АО, которую выплачивают акционерам."],
+  ["хозяйственное ведение", "Хозяйственное ведение — предприятие пользуется имуществом собственника и распоряжается им, но крупные сделки — только с его согласия."],
+  ["субсидиарно", "Субсидиарно — дополнительно: сначала платит организация, а если её имущества не хватило — участники."],
+  ["устав", "Устав — главный документ организации: название, цели, порядок управления. Его утверждают учредители."]
+];
+const TALKS = {
+  ip: [
+    ["Что такое юридическое лицо?", [["chef", "Стоп-стоп. Что такое **юридическое лицо**?"],
+      ["waiter", "Это организация, которая по закону существует как отдельная «личность». У неё **своё имущество**, отдельное от имущества владельцев. Она сама **отвечает им по долгам**, заключает договоры **от своего имени** и может **судиться**. Лёва юрлицо не создавал — он ведёт бизнес как обычный гражданин."]]],
+    ["Устав и учредительный договор", [["chef", "А **устав** и **учредительный договор** — это что?"],
+      ["waiter", "Это **учредительные документы** — «паспорт» организации: как она называется, чем занимается, кто и как принимает решения. **Устав** — главный документ почти у всех организаций, его утверждают учредители. **Учредительный договор** — соглашение самих участников о том, как они вместе ведут дела. Он бывает **только у товариществ** — полного и на вере. У ИП нет ни того ни другого."]]],
+    ["Уставный капитал", [["chef", "А **уставный капитал**? Зачем он вообще нужен?"],
+      ["waiter", "Это деньги или имущество, которые участники **вкладывают в организацию при создании**, — её стартовый запас. По нему считают **доли** владельцев, и на него в первую очередь могут рассчитывать **кредиторы**, если организация задолжает. У ООО минимум — **10 000 ₽**. Лёве он не нужен: за его долги и так отвечает всё его имущество."]]],
+    ["Зачем говорить про долги?", [["chef", "Лёва, а зачем ты нам вообще про **долги** рассказываешь?"],
+      ["Бариста Лёва", "Потому что это **главный вопрос при выборе формы**! Любой бизнес может прогореть. От формы зависит, **чем ты рискуешь**: только деньгами, которые вложил в дело, или вообще всем — машиной, дачей, накоплениями."],
+      ["waiter", "Вот и запоминай у каждого гостя: **кто и чем отвечает по долгам**."]]]
+  ],
+  pt: [
+    ["Коммерческие организации", [["chef", "Маша, вы сказали «только ИП и **коммерческие организации**». А что это такое?"],
+      ["waiter", "**Коммерческие** организации работают **ради прибыли**: кафе, магазины, пекарни. А **некоммерческие** — фонды, профсоюзы, религиозные организации — создают не ради прибыли. В полном товариществе могут участвовать только те, кто **сам занимается бизнесом**: ИП и коммерческие организации."]]],
+    ["Складочный капитал", [["chef", "А **складочный капитал** — это что?"],
+      ["Маша", "Это **общая копилка** товарищества. Каждая из нас внесла свой вклад — деньги, духовку, миксеры — и всё **сложилось вместе**. Отсюда и название — складочный."],
+      ["Даша", "Кто вложил больше, у того и доля больше: **больше прибыли** получает, но и **убытков** на него приходится больше."]]],
+    ["Солидарно и субсидиарно", [["chef", "А «**солидарно и субсидиарно**» — это как?"],
+      ["Даша", "**Субсидиарно** значит **дополнительно**. Сначала долг платит само товарищество своим имуществом. Если его не хватило — остаток доплачиваем мы, своим."],
+      ["Маша", "А **солидарно** — значит **за всех сразу**. Кредитор может потребовать весь остаток долга **с любой из нас**. Заплатила Даша за двоих — потом я верну ей свою часть."]]]
+  ],
+  ao: [
+    ["Публично на бирже — это как?", [["chef", "А что значит «акции **размещаются публично, на бирже**»?"],
+      ["ПАО «Бургер-Холдинг»", "**Акция** — это маленький кусочек компании. Когда мы выпускаем акции, мы их **размещаем** — продаём первым покупателям. **Публично** — значит не узкому кругу своих, а **всем желающим**. А на **бирже** акции потом **обращаются**: люди перепродают их друг другу, как на большом рынке."],
+      ["waiter", "В **непубличном АО** так нельзя: его акции не продаются на бирже всем подряд."]]]
+  ],
+  hp: [
+    ["Чем партнёрство отличается от ООО?", [["chef", "Впервые слышу про партнёрства. **Чем вы отличаетесь от ООО**?"],
+      ["Стартап «Съедобная упаковка»", "Кое в чём мы похожи: участники **не отвечают по долгам** и рискуют только вкладами. Но главное отличие — **соглашение об управлении партнёрством**. В нём можно очень гибко договориться: кто что вкладывает, кто какие решения принимает, как делим прибыль, что будет, если кто-то захочет выйти. В соглашении могут участвовать **не только участники**, но и другие лица — например, инвестор."]]],
+    ["Зачем выбирают партнёрство?", [["chef", "А **почему вообще выбирают** партнёрство?"],
+      ["Стартап «Съедобная упаковка»", "Это форма для **стартапов и наукоёмких проектов**: изобретателям и инвесторам удобно прописать всё «под себя» в одном соглашении. Но есть цена — партнёрству **нельзя рекламировать** свою деятельность и **выпускать облигации**. Поэтому для кафе или магазина оно не подходит, а для лаборатории — в самый раз."],
+      ["waiter", "Форма редкая, но на ЕГЭ встречается. Запомни три вещи: **от 2 до 50 участников**, **соглашение об управлении**, **запрет рекламы**."]]]
+  ],
+  pk: [
+    ["Что такое пай?", [["chef", "Вы сказали «паевые взносы». А что такое **пай**?"],
+      ["Артель «Тёплый хлеб»", "**Пай** — это **доля члена в имуществе кооператива**. Каждый вносит **паевой взнос** — деньги или, например, свою печь, — и из всех взносов складывается **паевой фонд**. Если кто-то уйдёт из артели, ему вернут **стоимость его пая**."],
+      ["waiter", "Но голосует каждый **одинаково**, сколько бы ни вложил: **один член — один голос**. Пай на голос не влияет."]]]
+  ]
+};
+const WAITER = `<svg viewBox="0 0 220 400" xmlns="http://www.w3.org/2000/svg">
+<ellipse cx="110" cy="392" rx="72" ry="8" fill="#3a0d17" opacity=".28"/>
+<path d="M84 298L82 380H104L108 298Z" fill="#2b2b33"/><path d="M112 298L116 380H138L136 298Z" fill="#2b2b33"/>
+<path d="M64 378q0-10 14-10h26v20H66z" fill="#1a1a1a"/><path d="M116 368h26q14 0 14 10v10h-40z" fill="#1a1a1a"/>
+<path d="M72 372h18M124 372h18" stroke="#6b6b75" stroke-width="2" stroke-linecap="round"/>
+<path d="M58 194Q64 172 92 166L128 166Q156 172 162 194L166 302Q110 312 54 302Z" fill="#fbf8ff" stroke="#3a0d17" stroke-width="2"/>
+<path d="M68 200Q72 178 94 172L110 214L126 172Q148 178 152 200L158 300Q110 310 62 300Z" fill="#2b2b33" stroke="#1a1a1a" stroke-width="2"/>
+<g fill="#ffd21f" stroke="#1a1a1a" stroke-width="1"><circle cx="110" cy="236" r="4"/><circle cx="110" cy="256" r="4"/><circle cx="110" cy="276" r="4"/></g>
+<path d="M76 248h18M128 248h16" stroke="#56565f" stroke-width="3" stroke-linecap="round"/>
+<rect x="99" y="146" width="22" height="24" rx="8" fill="#e6b08e"/>
+<path d="M92 164L110 178L128 164L124 186L110 180L96 186Z" fill="#fff" stroke="#3a0d17" stroke-width="1.5"/>
+<path d="M110 178L90 168L90 190Z" fill="#ffd21f" stroke="#3a0d17" stroke-width="1.5"/>
+<path d="M110 178L130 168L130 190Z" fill="#ffd21f" stroke="#3a0d17" stroke-width="1.5"/>
+<rect x="104" y="172" width="12" height="12" rx="3" fill="#ffd21f" stroke="#3a0d17" stroke-width="1.5"/>
+<path d="M60 196Q44 244 54 288" stroke="#fbf8ff" stroke-width="22" stroke-linecap="round" fill="none"/>
+<path d="M60 196Q44 244 54 288" stroke="#3a0d17" stroke-width="25" stroke-linecap="round" fill="none" opacity=".12"/>
+<path d="M40 236h30v52q-15 6-30 0z" fill="#fff" stroke="#3a0d17" stroke-width="1.5"/>
+<path d="M40 250h30M40 262h30" stroke="#ff2f73" stroke-width="3"/>
+<circle cx="55" cy="293" r="10" fill="#f2c4a4"/>
+<path d="M160 196Q192 210 182 158" stroke="#fbf8ff" stroke-width="22" stroke-linecap="round" fill="none"/>
+<g transform="rotate(12 196 130)"><rect x="176" y="96" width="42" height="56" rx="4" fill="#ffd21f" stroke="#3a0d17" stroke-width="2"/><path d="M182 110h30M182 120h26M182 130h28M182 140h20" stroke="#3a0d17" stroke-width="2" opacity=".55"/><rect x="186" y="90" width="22" height="9" rx="2" fill="#8e1b2e"/></g>
+<circle cx="183" cy="156" r="10" fill="#f2c4a4"/>
+<circle cx="72" cy="122" r="7" fill="#e6b08e"/><circle cx="148" cy="122" r="7" fill="#e6b08e"/>
+<ellipse cx="110" cy="120" rx="38" ry="42" fill="#f2c4a4"/>
+<path d="M70 118Q66 72 110 70Q154 72 150 118Q146 96 132 90Q112 100 84 96Q76 104 72 122Z" fill="#3b2418"/>
+<path d="M84 96Q104 80 132 90" stroke="#5a3826" stroke-width="3" fill="none" stroke-linecap="round"/>
+<path d="M88 110q8-5 16-1M116 109q8-4 16 1" stroke="#3b2418" stroke-width="3" fill="none" stroke-linecap="round"/>
+<ellipse cx="96" cy="124" rx="5" ry="6.5" fill="#2b1840"/><ellipse cx="124" cy="124" rx="5" ry="6.5" fill="#2b1840"/>
+<circle cx="98" cy="121.5" r="1.9" fill="#fff"/><circle cx="126" cy="121.5" r="1.9" fill="#fff"/>
+<ellipse cx="86" cy="140" rx="7" ry="4" fill="#ff8fb8" opacity=".55"/><ellipse cx="134" cy="140" rx="7" ry="4" fill="#ff8fb8" opacity=".55"/>
+<path d="M110 128q-3 7 2 9" stroke="#b97a5e" stroke-width="2" fill="none" stroke-linecap="round"/>
+<path d="M99 145q11 9 22 0" stroke="#8a2350" stroke-width="3" fill="none" stroke-linecap="round"/>
+</svg>
+`;
+const VAN = `<svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg">
+<ellipse cx="320" cy="388" rx="290" ry="14" fill="#3a0d17" opacity=".2"/>
+<g transform="translate(230 34)">
+ <rect x="0" y="40" width="180" height="16" rx="8" fill="#3a0d17"/><rect x="40" y="56" width="10" height="34" fill="#3a0d17"/><rect x="130" y="56" width="10" height="34" fill="#3a0d17"/>
+ <path d="M10 30q80-40 160 0q8 14 0 22q-80 30-160 0q-8-8 0-22z" fill="#e8a979" stroke="#3a0d17" stroke-width="3"/>
+ <rect x="16" y="22" width="148" height="22" rx="11" fill="#c8102e" stroke="#3a0d17" stroke-width="3"/>
+ <path d="M28 32l10-6 10 6 10-6 10 6 10-6 10 6 10-6 10 6 10-6 10 6 10-6 10 6" stroke="#ffd21f" stroke-width="4" fill="none" stroke-linecap="round"/>
+</g>
+<path d="M40 130q0-26 26-26h380q26 0 40 20l70 96q10 14 10 30v90q0 20-20 20H60q-20 0-20-20z" fill="#ffd21f" stroke="#3a0d17" stroke-width="4"/>
+<path d="M40 300h526v24q0 20-20 20H60q-20 0-20-20z" fill="#8e1b2e"/>
+<path d="M454 128l64 88q4 8-4 10H454z" fill="#cfe9ff" stroke="#3a0d17" stroke-width="4"/>
+<rect x="84" y="150" width="300" height="110" rx="10" fill="#3a0d17"/>
+<rect x="96" y="162" width="276" height="86" rx="6" fill="#ffe9b0"/>
+<circle cx="150" cy="210" r="16" fill="#ff2f73"/><circle cx="320" cy="200" r="20" fill="#e8a979"/><rect x="200" y="196" width="80" height="22" rx="11" fill="#c8102e"/>
+<g><path d="M70 150h328l-12 -38H82z" fill="#fff" stroke="#3a0d17" stroke-width="3"/>
+<path d="M98 112l-6 38M146 112l-4 38M194 112l-2 38M242 112v38M290 112l2 38M338 112l4 38M374 112l8 38" stroke="#ff2f73" stroke-width="14"/>
+<path d="M70 150q20 14 41 0q20 14 41 0q20 14 41 0q20 14 41 0q20 14 41 0q20 14 41 0q20 14 41 0q20 14 41 0" fill="#fff" stroke="#3a0d17" stroke-width="3"/></g>
+<rect x="76" y="258" width="316" height="14" rx="4" fill="#c47a58" stroke="#3a0d17" stroke-width="3"/>
+<circle cx="150" cy="346" r="40" fill="#2b2b33" stroke="#3a0d17" stroke-width="4"/><circle cx="150" cy="346" r="16" fill="#c9cdd3"/>
+<circle cx="470" cy="346" r="40" fill="#2b2b33" stroke="#3a0d17" stroke-width="4"/><circle cx="470" cy="346" r="16" fill="#c9cdd3"/>
+<rect x="540" y="270" width="30" height="16" rx="6" fill="#fff3c4" stroke="#3a0d17" stroke-width="3"/>
+</svg>
+`;
+
+// без вопросов про реестры
+STATIONS.forEach(st => { st.items = st.items.filter(it => !/реестр/i.test(typeof it.q === 'function' ? it.q({n:''}) : it.q)).map(it => Object.assign(it, { opts: it.opts.map(o => o === 'Свидетельство ЕГРИП' ? 'Соглашение об управлении' : o) })); });
+FORMS.find(f => f.id === 'ip').rows[0][1] = 'один гражданин';
+
+const PROPS = { ip:'☕', pt:'🎂', tv:'🥘', ooo:'🥟', ao:'🍔', hp:'🧪', pk:'🥖', kfh:'🥕', gup:'🍎' };
+const TAGS = { ip:'ИП', pt:'Полное товарищество', tv:'Товарищество на вере', ooo:'ООО', ao:'ПАО', hp:'Хозпартнёрство', pk:'Произв. кооператив', kfh:'КФХ', gup:'МУП' };
+const DOSSIER = {
+  ip:  { biz:'Кофе в фургончике у метро', fact:'Работает один, без всякой организации.' },
+  pt:  { biz:'Торты на заказ', fact:'Две подруги-кондитера объединили свои бизнесы.' },
+  tv:  { biz:'Маленькое бистро', fact:'Шеф ведёт дела, а крёстная вложила деньги.' },
+  ooo: { biz:'Пельменная на соседней улице', fact:'Открыла бизнес одна и бережёт свою квартиру.' },
+  ao:  { biz:'Двести бургерных по стране', fact:'Продаёт свои акции на бирже.' },
+  hp:  { biz:'Съедобные стаканчики', fact:'Изобретатели из лаборатории, рекламы не дают.' },
+  pk:  { biz:'Пекарня «Тёплый хлеб»', fact:'Семеро пекарей, и все стоят у печи.' },
+  kfh: { biz:'Ферма: зелень и томаты', fact:'Вся семья работает на земле.' },
+  gup: { biz:'Обеды для школьников района', fact:'Её создал город.' }
+};
+// внешность гостей: один или два портрета за столиком
+const LOOK = {
+  ip:  [{skin:'#e9b48f',hair:'#3b2418',style:'short',kind:'apron',top:'#2f9e6e',apron:'#7a4a35',hat:'beanie',hatc:'#8e1b2e'}],
+  pt:  [{skin:'#ffd9bd',hair:'#e2a24a',style:'long',kind:'shirt',top:'#ff7fb0',hat:'headband',hatc:'#ffffff'},{skin:'#c68a66',hair:'#1f1730',style:'bun',kind:'shirt',top:'#ffd21f'}],
+  tv:  [{skin:'#f2c4a4',hair:'#6b3b22',style:'short',kind:'chef',beard:true},{skin:'#f6d0b6',hair:'#cfcfd6',style:'bob',kind:'jacket',top:'#7b4fd8',pearls:true,glasses:true}],
+  ooo: [{skin:'#ffdcc2',hair:'#c2502b',style:'ponytail',kind:'apron',top:'#4a7fd8',apron:'#fff3c4'}],
+  ao:  [{skin:'#f2c4a4',hair:'#9a9aa5',style:'short',kind:'suit',top:'#23304f',tie:'#ffd21f',glasses:true}],
+  hp:  [{skin:'#d9a07c',hair:'#2d1f3d',style:'curly',kind:'hoodie',top:'#2fb3a5',hat:'goggles'}],
+  pk:  [{skin:'#f2c4a4',hair:'#7a4322',style:'short',kind:'chef',beard:true,hat:'baker'},{skin:'#e9b48f',hair:'#2d1f3d',style:'short',kind:'chef',hat:'baker'}],
+  kfh: [{skin:'#e3a985',hair:'#7a4322',style:'short',kind:'plaid',top:'#d9483b',hat:'straw',beard:true},{skin:'#f2c4a4',hair:'#e2a24a',style:'long',kind:'shirt',top:'#5aa846',hat:'kerchief',hatc:'#ffd21f'}],
+  gup: [{skin:'#f6d0b6',hair:'#6b3b22',style:'bob',kind:'apron',top:'#ffffff',apron:'#ff8fb0',hat:'cook',glasses:true}]
+};
+const HALL_ORDER = ['pk','kfh','gup','ooo','ao','hp','ip','pt','tv']; // задний ряд → передний
+const ORDER = ['ip','pt','tv','ooo','ao','hp','pk','kfh','gup'];         // порядок прохождения
+// диалог столовой выстроен по порядку: кто создал → что значит «унитарное» → хозяйственное ведение → долги → зачем нужны
+const CUSTOM_LINES = {
+  gup: [
+    ['g', 'Привет! Мы кормим школьников со всего района.'],
+    ['c', 'А кто вас создал? Что для этого было нужно?'],
+    ['g', 'Нас создал город — мы **муниципальное унитарное предприятие** (МУП). Если бы нас создало государство — РФ или регион, — были бы ГУП. Частный человек такое предприятие создать не может. **Участников у нас нет**, а учредительный документ — **устав**.'],
+    ['c', 'А что значит «**унитарное**»?'],
+    ['g', 'От слова «**единый**». Здание, плиты, кастрюли — **собственность города**. Нам их передали, но поделить это имущество на доли, паи или вклады **нельзя** — даже между работниками. Оно **неделимо**.'],
+    ['c', 'Передали — это как? Чьё же тогда имущество?'],
+    ['w', 'Город остаётся собственником, а предприятию передаёт имущество **в хозяйственное ведение**. Столовая сама им пользуется и распоряжается: готовит, продаёт обеды, чинит плиты. Но крупные шаги — например, продать или сдать в аренду здание — только **с согласия собственника**.'],
+    ['c', 'А если появятся долги — кто за них отвечает?'],
+    ['g', 'Мы сами — **своим имуществом**. А город по нашим долгам **не отвечает**.'],
+    ['c', 'Зачем вообще городу и государству такие предприятия?'],
+    ['w', 'Там, где важно не только заработать, но и **обеспечить людей нужным**: школьное питание, вода, транспорт. Унитарное предприятие — коммерческая организация, но работает на задачи собственника.'],
+    ['g', 'Ну что, проверим, что запомнилось? Ответь на вопросы — и соберёшь рецепт моей формы.']
+  ]
+};
+const nextId = () => ORDER.find(id => !S.done.includes(id));
+function shuffled(n){ const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+const KITCHEN1 = [
+  ['c', 'Как мне всё это надоело! Хочу открыть свой фургон с хот-догами и радоваться жизни.'],
+  ['w', 'Погоди! А ты знаешь, что всё надо официально зарегистрировать? Как минимум — выбрать **ОПФ**, организационно-правовую форму.'],
+  ['c', 'Окей, хорошо. А какие есть?'],
+  ['w', 'Вот такие:', 'list'],
+  ['c', 'ОЧЕНЬ СЛОЖНО! Как из всего этого выбрать?'],
+  ['w', 'У нас в зале куча гостей со своим бизнесом. Давай их поспрашиваем! Каждый расскажет, чем занимается, как создавал дело и как отвечает по долгам.']
+];
+const FORMLIST = [['ИП','гражданин ведёт бизнес сам, без создания организации','#ffe1c7'],['Полное товарищество','партнёры вместе ведут дела и отвечают всем имуществом','#fff1a8'],['Товарищество на вере','полные товарищи плюс вкладчики, которые только дают деньги','#fff1a8'],['ООО','капитал разделён на доли, участники по долгам не отвечают','#d9f5c2'],['АО (ПАО и непубличное)','капитал разделён на акции','#d9f5c2'],['Хозяйственное партнёрство','редкая форма для инновационных проектов','#d3d8ff'],['Производственный кооператив','работаем вместе и делим доход по труду','#ffd0ec'],['КФХ','вместе ведём сельское хозяйство','#c9f3ee'],['ГУП и МУП','предприятия государства и муниципалитетов','#fff4bf']];
+const KITCHEN2 = [
+  ['c', 'Ну всё, всех выслушали. Так какая форма подойдёт мне?'],
+  ['w', 'Давай составим чек-лист: чего ты хочешь? И будем вычёркивать то, что не подходит.']
+];
+const CHECK = [
+  ['Продавать акции на бирже?', 'Пока нет.', 'ao', 'Акции бывают только у акционерного общества — а они не нужны.'],
+  ['Работать буду один?', 'Нет, вместе с Тимуром — как совладельцы.', 'ip', 'ИП — один гражданин, совладельцев у него не бывает. Тимура можно было бы только нанять.'],
+  ['Позовём инвесторов, которые дают деньги и не управляют?', 'Пока нет.', 'tv', 'Без вкладчиков-коммандитистов товарищество на вере не нужно.'],
+  ['Нужны вывеска и реклама?', 'Конечно!', 'hp', 'Хозяйственному партнёрству запрещено рекламировать свою деятельность.'],
+  ['Будем выращивать овощи?', 'Нет, жарить сосиски.', 'kfh', 'КФХ создают для сельского хозяйства.'],
+  ['Мы государство или муниципалитет?', 'Нет, мы повар и официант.', 'gup', 'Унитарное предприятие создаёт только государство или муниципалитет.'],
+  ['Нас будет пятеро и больше?', 'Нет, двое.', 'pk', 'В производственном кооперативе нужно не менее 5 членов с личным трудовым участием.']
+];
+const OKS = ['Вкусно! Верно.','Шеф доволен — правильно!','В точку!','Идеальная подача — верно!','Пять звёзд — так и есть!'];
+const NOS = ['Пересолено — не совсем так.','Подгорело — неверно.','Не тот рецепт.','Почти, но нет.'];
+
+/* ===================== состояние и сохранение ===================== */
+const KEY = 'svoya-kukhnya-v2';
+const fresh = () => ({ v:2, screen:'title', n:'', av:0, k:0, done:[], scores:{}, stars:0, max:0, cur:null, fin:null, sel:null });
+let S = fresh();
+function save(){
+  try { localStorage.setItem(KEY, JSON.stringify(S)); const el = $('#saved'); el.classList.add('on'); clearTimeout(save.t); save.t = setTimeout(() => el.classList.remove('on'), 1200); } catch(e) {}
+}
+function load(){ try { const r = localStorage.getItem(KEY); if (r) { const o = JSON.parse(r); if (o && o.v === 2) return o; } } catch(e) {} return null; }
+function wipe(){ try { localStorage.removeItem(KEY); } catch(e) {} }
+
+/* ===================== утилиты ===================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const T = v => typeof v === 'function' ? v({ n: S.n }) : v;
+const F = id => FORMS.find(f => f.id === id);
+const ST = id => STATIONS.find(s => s.id === id);
+const stage = $('#stage'), panel = $('#panel');
+function rich(t){
+  return String(t).split('**').map((seg, i) => {
+    if (!(i % 2)) return seg;
+    const tip = TIPS.find(([k]) => seg.toLowerCase().includes(k));
+    if (!tip) return `<b>${seg}</b>`;
+    const at = seg.toLowerCase().indexOf(tip[0]), end = at + tip[0].length;
+    return `<b>${seg.slice(0, at)}</b><span class="term" tabindex="0">${seg.slice(at, end)}<span class="tip" role="tooltip">${tip[1]}</span></span><b>${seg.slice(end)}</b>`;
+  }).join('').replace(/<b><\/b>/g, '');
+}
+function updStars(){ $('#starChip').textContent = `⭐ ${S.stars}`; }
+function room(t){ $('#room').textContent = t; }
+function popStar(){ const s = document.createElement('div'); s.className = 'pop'; s.textContent = '+⭐'; stage.appendChild(s); setTimeout(() => s.remove(), 1200); }
+function jump(el){ if (!el) return; el.classList.remove('jump','talk'); void el.offsetWidth; el.classList.add('jump'); setTimeout(() => el.classList.remove('jump'), 650); }
+function confetti(){
+  const box = document.createElement('div'); box.className = 'confetti';
+  const cols = ['#ff2f73','#ffd21f','#8e1b2e','#ff8fb0','#ff7a3d'];
+  for (let i = 0; i < 60; i++){ const c = document.createElement('i'); c.style.left = Math.random()*100+'vw'; c.style.background = pick(cols); c.style.animationDuration = (2+Math.random()*2)+'s'; c.style.animationDelay = (Math.random()*.6)+'s'; box.appendChild(c); }
+  document.body.appendChild(box); setTimeout(() => box.remove(), 4800);
+}
+function showFB(ok, text, btn, onClick){
+  hideFB();
+  const d = document.createElement('div'); d.id = 'fbin'; d.className = 'fbin ' + (ok ? 'ok' : 'no'); d.setAttribute('aria-live', 'polite');
+  d.innerHTML = `<div class="verdict ${ok?'ok':'no'}">${pick(ok?OKS:NOS)}</div><p>${text}</p><button class="btn" id="qn">${btn}</button>`;
+  panel.appendChild(d);
+  panel.style.scrollPaddingBottom = (d.offsetHeight + 10) + 'px';
+  $('#qn').onclick = () => { hideFB(); onClick(); };
+  $('#qn').focus({preventScroll:true});
+  const r = panel.querySelector('.opt.right,.fp.right'); if (r) r.scrollIntoView({block:'nearest'});
+}
+function hideFB(){ const d = $('#fbin'); if (d) d.remove(); panel.style.scrollPaddingBottom = ''; }
+
+/* ===================== рисунки ===================== */
+function bust(c){
+  const sk = c.skin, hr = c.hair, L = '#3a0d17';
+  let back = '';
+  if (c.style === 'long') back = `<path d="M56 92Q48 170 62 214H138Q152 170 144 92Z" fill="${hr}"/>`;
+  if (c.style === 'bob') back = `<path d="M56 98Q52 56 100 50Q148 56 144 98L150 150Q100 162 50 150Z" fill="${hr}"/>`;
+  if (c.style === 'ponytail') back = `<path d="M136 76q38 6 30 74q-6 22-18 8q8-44-16-64z" fill="${hr}"/>`;
+  if (c.style === 'bun') back = `<circle cx="100" cy="46" r="19" fill="${hr}"/>`;
+  const TOR = 'M24 240Q28 170 72 158L128 158Q172 170 176 240Z';
+  let torso = '';
+  if (c.kind === 'chef') torso = `<path d="${TOR}" fill="#fbf8ff" stroke="${L}" stroke-width="2"/><path d="M110 164L116 240" stroke="#e6dcd8" stroke-width="3"/><g fill="#ff2f73" stroke="${L}" stroke-width="1"><circle cx="94" cy="190" r="4"/><circle cx="118" cy="190" r="4"/><circle cx="96" cy="212" r="4"/><circle cx="120" cy="212" r="4"/></g><path d="M84 158Q100 174 116 158L112 172Q100 178 88 172Z" fill="#ff2f73" stroke="${L}" stroke-width="1.5"/>`;
+  else if (c.kind === 'suit') torso = `<path d="${TOR}" fill="${c.top}" stroke="${L}" stroke-width="2"/><path d="M84 158L100 196L116 158Z" fill="#fff"/><path d="M96 168h8l3 10-7 30-7-30z" fill="${c.tie}" stroke="${L}" stroke-width="1.2"/><path d="M80 158L100 204L88 176L74 164ZM120 158L100 204L112 176L126 164Z" fill="#1b2540"/>`;
+  else if (c.kind === 'hoodie') torso = `<path d="${TOR}" fill="${c.top}" stroke="${L}" stroke-width="2"/><path d="M66 166q34 30 68 0" stroke="#1f8a7e" stroke-width="12" fill="none" stroke-linecap="round"/><path d="M92 176v26M108 176v26" stroke="#fff" stroke-width="3" stroke-linecap="round"/>`;
+  else if (c.kind === 'jacket') torso = `<path d="${TOR}" fill="${c.top}" stroke="${L}" stroke-width="2"/><path d="M86 158L100 186L114 158Z" fill="#fff"/><path d="M82 158L100 200L90 178L76 164ZM118 158L100 200L110 178L124 164Z" fill="#5a3ab0"/>`;
+  else if (c.kind === 'plaid') torso = `<path d="${TOR}" fill="${c.top}" stroke="${L}" stroke-width="2"/><path d="M52 190H150M44 214H158M70 166V240M100 160V240M130 166V240" stroke="#8e1b2e" stroke-width="5" opacity=".55"/><path d="M86 158L100 178L114 158" fill="#fff" stroke="${L}" stroke-width="1.5"/>`;
+  else torso = `<path d="${TOR}" fill="${c.top}" stroke="${L}" stroke-width="2"/><path d="M86 158L100 180L114 158" fill="#fff" stroke="${L}" stroke-width="1.5"/>`;
+  if (c.kind === 'apron') torso += `<path d="M66 192H134L142 240H58Z" fill="${c.apron}" stroke="${L}" stroke-width="2"/><path d="M78 162L72 192M122 162L128 192" stroke="${c.apron}" stroke-width="6"/><path d="M78 162L72 192M122 162L128 192" stroke="${L}" stroke-width="1" opacity=".5"/>`;
+  let front = '';
+  if (c.style === 'short') front = `<path d="M60 96Q58 52 100 50Q142 52 140 96Q132 72 112 70Q90 78 62 98Z" fill="${hr}"/>`;
+  else if (c.style === 'curly') front = [64,76,88,100,112,124,136].map((x,i) => `<circle cx="${x}" cy="${62 - (i%2?6:0)}" r="12" fill="${hr}"/>`).join('') + `<circle cx="58" cy="84" r="10" fill="${hr}"/><circle cx="142" cy="84" r="10" fill="${hr}"/>`;
+  else if (c.style === 'bob') front = `<path d="M60 100Q58 52 100 50Q142 52 140 100Q132 74 116 70Q100 84 66 92Z" fill="${hr}"/>`;
+  else front = `<path d="M60 100Q58 52 100 50Q142 52 140 100Q128 70 100 68Q74 70 60 100Z" fill="${hr}"/>`;
+  let face = `<path d="M76 88q9-5 18-1M106 87q9-4 18 1" stroke="${c.hair === '#cfcfd6' ? '#8a8a96' : hr}" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="86" cy="100" rx="5.2" ry="6.6" fill="#2b1840"/><ellipse cx="114" cy="100" rx="5.2" ry="6.6" fill="#2b1840"/>
+    <circle cx="88" cy="97.5" r="1.9" fill="#fff"/><circle cx="116" cy="97.5" r="1.9" fill="#fff"/>
+    <ellipse cx="74" cy="116" rx="7" ry="4" fill="#ff8fb8" opacity=".55"/><ellipse cx="126" cy="116" rx="7" ry="4" fill="#ff8fb8" opacity=".55"/>
+    <path d="M100 104q-3 7 2 9" stroke="#b97a5e" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  if (c.beard) face += `<path d="M64 104Q68 146 100 148Q132 146 136 104Q128 130 100 132Q72 130 64 104Z" fill="${hr}"/>`;
+  face += `<path d="M88 121q12 10 24 0" stroke="#8a2350" stroke-width="3" fill="${c.beard ? '#fff' : 'none'}" stroke-linecap="round"/>`;
+  if (c.glasses) face += `<g fill="none" stroke="#2b1840" stroke-width="2.6"><rect x="72" y="89" width="27" height="21" rx="9"/><rect x="101" y="89" width="27" height="21" rx="9"/><path d="M99 98h2"/></g>`;
+  let hat = '';
+  if (c.hat === 'beanie') hat = `<path d="M58 84Q60 38 100 36Q140 38 142 84Z" fill="${c.hatc}" stroke="${L}" stroke-width="2"/><rect x="56" y="74" width="88" height="16" rx="7" fill="${c.hatc}" stroke="${L}" stroke-width="2"/><path d="M64 82h72" stroke="#fff" stroke-width="2" opacity=".4"/><circle cx="100" cy="32" r="9" fill="#fff" stroke="${L}" stroke-width="2"/>`;
+  if (c.hat === 'straw') hat = `<ellipse cx="100" cy="66" rx="72" ry="13" fill="#e8c36a" stroke="${L}" stroke-width="2"/><path d="M66 66Q68 30 100 28Q132 30 134 66Z" fill="#f0d27e" stroke="${L}" stroke-width="2"/><path d="M67 58h66" stroke="#8e1b2e" stroke-width="6"/>`;
+  if (c.hat === 'baker') hat = `<path d="M60 76Q56 40 100 38Q144 40 140 76Z" fill="#fff" stroke="${L}" stroke-width="2"/><rect x="60" y="68" width="80" height="12" rx="5" fill="#fff" stroke="${L}" stroke-width="2"/>`;
+  if (c.hat === 'headband') hat = `<path d="M62 80Q100 54 138 80" stroke="${c.hatc}" stroke-width="9" fill="none"/><path d="M62 80Q100 54 138 80" stroke="${L}" stroke-width="1.5" fill="none" opacity=".5"/><circle cx="128" cy="70" r="7" fill="#ff2f73" stroke="${L}" stroke-width="1.5"/>`;
+  if (c.hat === 'goggles') hat = `<path d="M60 72Q100 60 140 72" stroke="#3a0d17" stroke-width="5" fill="none"/><circle cx="84" cy="66" r="12" fill="#bfe8ff" stroke="${L}" stroke-width="3"/><circle cx="116" cy="66" r="12" fill="#bfe8ff" stroke="${L}" stroke-width="3"/>`;
+  if (c.hat === 'cook') hat = `<path d="M58 86Q56 42 100 40Q144 42 142 86Q100 70 58 86Z" fill="#fff" stroke="${L}" stroke-width="2"/><path d="M64 78Q100 66 136 78" stroke="#e6dcd8" stroke-width="3" fill="none"/>`;
+  if (c.hat === 'kerchief') hat = `<path d="M58 92Q60 44 100 42Q140 44 142 92Q100 72 58 92Z" fill="${c.hatc}" stroke="${L}" stroke-width="2"/><path d="M138 86l16 14-18 4z" fill="${c.hatc}" stroke="${L}" stroke-width="2"/><circle cx="84" cy="60" r="3" fill="#fff"/><circle cx="110" cy="54" r="3" fill="#fff"/><circle cx="124" cy="68" r="3" fill="#fff"/>`;
+  let pearls = c.pearls ? [84,90,96,102,108,114].map((x,i) => `<circle cx="${x+2}" cy="${166 + Math.abs(i-2.5)*-1.5}" r="3.2" fill="#fff" stroke="#c9b9c0" stroke-width="1"/>`).join('') : '';
+  return `<svg viewBox="0 0 200 240" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${back}${torso}<rect x="88" y="128" width="24" height="34" rx="9" fill="${sk}" opacity=".92"/>${pearls}<circle cx="60" cy="102" r="7" fill="${sk}"/><circle cx="140" cy="102" r="7" fill="${sk}"/><ellipse cx="100" cy="96" rx="40" ry="44" fill="${sk}"/>${front}${face}${hat}</svg>`;
+}
+const busts = id => LOOK[id].map(bust).join('');
+const TABLE = `<svg viewBox="0 0 220 74" aria-hidden="true"><ellipse cx="110" cy="70" rx="70" ry="5" fill="#3a0d17" opacity=".22"/><path d="M8 10H212L196 66H24Z" fill="#fff" stroke="#3a0d17" stroke-width="3" stroke-linejoin="round"/><path d="M92 10H128L124 66H96Z" fill="#ff2f73"/><ellipse cx="110" cy="10" rx="104" ry="7" fill="#fff" stroke="#3a0d17" stroke-width="3"/></svg>`;
+const hallBG = (par = "xMidYMax") => `<svg class="bg" viewBox="0 0 1200 720" preserveAspectRatio="${par} slice" aria-hidden="true">
+<defs>
+<pattern id="wp" width="44" height="44" patternUnits="userSpaceOnUse"><rect width="44" height="44" fill="#f7ebe5"/><rect width="10" height="44" fill="#f0dbd3"/><circle cx="27" cy="22" r="3" fill="#ecc8bf"/></pattern>
+<pattern id="fl" width="90" height="46" patternUnits="userSpaceOnUse"><rect width="90" height="46" fill="#f6ede4"/><rect width="45" height="23" fill="#8e1b2e"/><rect x="45" y="23" width="45" height="23" fill="#8e1b2e"/></pattern>
+<linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcf9e"/><stop offset=".6" stop-color="#ff9e8f"/><stop offset="1" stop-color="#d9627e"/></linearGradient>
+<radialGradient id="gl"><stop offset="0" stop-color="#fff2c2" stop-opacity=".85"/><stop offset="1" stop-color="#fff2c2" stop-opacity="0"/></radialGradient>
+</defs>
+<rect width="1200" height="720" fill="url(#wp)"/>
+<rect width="1200" height="30" fill="#8e1b2e"/><rect y="30" width="1200" height="6" fill="#6f1323"/>
+${[170,430,690,950].map(x => `<path d="M${x} 230V108a60 60 0 0 1 120 0v122z" fill="#c47a58"/><path d="M${x+12} 230V110a48 48 0 0 1 96 0v120z" fill="url(#sun)"/><path d="M${x+60} 62v168M${x+12} 150h96" stroke="#c47a58" stroke-width="7"/>`).join('')}
+${[340,600,860].map(x => `<path d="M${x} 36v40" stroke="#3a0d17" stroke-width="3"/><ellipse cx="${x}" cy="150" rx="110" ry="80" fill="url(#gl)"/><path d="M${x-24} 100h48l-12-24h-24z" fill="#8e1b2e"/><ellipse cx="${x}" cy="100" rx="24" ry="5" fill="#ffe9b0"/>`).join('')}
+<rect y="254" width="1200" height="74" fill="#8e1b2e"/><rect y="248" width="1200" height="10" fill="#c47a58"/>
+<g fill="none" stroke="#6f1323" stroke-width="4">${[20,180,340,500,660,820,980,1140].map(x => `<rect x="${x}" y="268" width="140" height="48" rx="6"/>`).join('')}</g>
+<rect y="328" width="1200" height="392" fill="url(#fl)"/><rect y="328" width="1200" height="8" fill="#3a0d17" opacity=".35"/>
+</svg>`;
+const kitchenSVG = () => $('#kitchenTpl').innerHTML;
+const waiterMini = () => `<span class="av">${WAITER.replace('viewBox="0 0 220 400"', 'viewBox="60 55 100 100"')}</span>`;
+
+/* ===================== сцены ===================== */
+function sceneKitchen(talk){
+  stage.className = 'stage';
+  stage.innerHTML = kitchenSVG() + `<div class="char left ${talk==='c'?'quiet':talk==='w'?'talk':''}" id="cw">${WAITER}</div><div class="char right ${talk==='w'?'quiet':talk==='c'?'talk':''}" id="cc">${playerSVG(S.av)}</div>`;
+}
+function sceneHall(){
+  stage.className = 'stage hall';
+  stage.innerHTML = hallBG() + `<div class="hallgrid">${HALL_ORDER.map((id, i) => {
+    const st = ST(id), done = S.done.includes(id), open = done || id === nextId(), num = ORDER.indexOf(id) + 1;
+    return `<button class="spot r${Math.floor(i/3)} ${done?'isdone':''} ${open?'':'locked'} ${!done&&open?'next':''} ${S.sel===id?'sel':''}" data-id="${id}" aria-label="Столик ${num}: ${esc(st.guest)}, ${TAGS[id]}${done?', уже поговорили':open?', можно подойти':', пока закрыт'}">
+      <span class="tag"><em>${open ? num : '🔒'}</em><i>${TAGS[id]}</i><span>${st.guest}</span></span>
+      <span class="who">${busts(id)}</span>
+      <span class="tbl">${TABLE}<span class="prop" aria-hidden="true">${PROPS[id]}</span></span>
+      ${done?'<span class="done" aria-hidden="true">✓</span>':''}</button>`;
+  }).join('')}</div>`;
+  stage.querySelectorAll('.spot').forEach(b => b.onclick = () => { S.sel = b.dataset.id; save(); renderHallPanel(); stage.querySelectorAll('.spot').forEach(x => x.classList.toggle('sel', x === b)); });
+}
+function sceneConvo(id, talk, compact){
+  stage.className = 'stage blur' + (compact ? ' compact' : '');
+  const two = LOOK[id].length > 1;
+  stage.innerHTML = hallBG('xMidYMin') + `<div class="char left ${talk==='c'?'talk':talk?'quiet':''}" id="cc">${playerSVG(S.av)}</div>
+    <div class="guestbox ${two?'pair':''} ${talk==='g'?'talk':talk?'quiet':''}" id="gb">${busts(id)}</div>
+    <div class="cloth"><span class="prop" aria-hidden="true">${PROPS[id]}</span></div>`;
+}
+
+/* ===================== экраны ===================== */
+function go(screen){ S.screen = screen; save(); render(); }
+function render(){
+  hideFB(); panel.scrollTop = 0;
+  const inGame = !['title','name'].includes(S.screen);
+  $('#menuBtn').hidden = !inGame;
+  $('#bookBtn').hidden = !inGame || S.done.length === 0;
+  updStars();
+  ({ title:rTitle, name:rName, kitchen:rKitchen, hall:rHall, convo:rConvo, final:rFinal, done:rDone })[S.screen]();
+}
+
+function rTitle(){
+  room('Начало');
+  stage.className = 'stage';
+  stage.innerHTML = kitchenSVG() + `<div class="char left">${WAITER}</div><div class="char right">${playerSVG(0)}</div>`;
+  const saved = load();
+  const can = saved && !['title','name'].includes(saved.screen);
+  panel.innerHTML = `<div class="title"><h1>Своя кухня</h1>
+    <p>Игра по обществознанию: помоги повару выбрать форму предпринимательства для своего фургона с хот-догами. Расспроси гостей ресторана о их бизнесе и собери девять рецептов.</p>
+    <div class="row">${can ? `<button class="btn" id="cont">Продолжить${saved.n ? ', шеф ' + saved.n : ''}</button><button class="btn ghost" id="newg">Новая игра</button>` : `<button class="btn" id="newg">Начать игру</button>`}</div>
+    ${can ? '<div class="hint">Прогресс сохраняется сам — можно закрыть страницу и вернуться позже.</div>' : ''}
+    <div class="credit">Обществознание — Юлия Сюрсина · Insperia</div></div>`;
+  if (can) $('#cont').onclick = () => { S = saved; render(); };
+  $('#newg').onclick = () => { if (can && !confirmNew()) return; wipe(); S = fresh(); go('name'); };
+}
+let armed = false;
+function confirmNew(){
+  if (armed) { armed = false; return true; }
+  armed = true; const b = $('#newg'); b.textContent = 'Точно? Прогресс сотрётся'; setTimeout(() => { armed = false; if (b.isConnected) b.textContent = 'Новая игра'; }, 3000);
+  return false;
+}
+function rName(){
+  room('Твой персонаж');
+  stage.className = 'stage';
+  stage.innerHTML = kitchenSVG() + `<div class="char left quiet">${WAITER}</div><div class="char right" id="cc">${playerSVG(S.av)}</div>`;
+  panel.innerHTML = `<span class="speaker w">${waiterMini()} Официант Тимур</span>
+    <div class="say">Привет! Ты наш повар. Как тебя зовут и как ты выглядишь на кухне?</div>
+    <div class="field"><input id="nm" maxlength="24" placeholder="Твоё имя" autocomplete="off" aria-label="Твоё имя" value="${esc(S.n)}"></div>
+    <div class="err" id="er"></div>
+    <div class="avatars" role="group" aria-label="Выбери внешность">${LOOKS.map((l,i) => `<button class="av2" data-i="${i}" aria-pressed="${i===S.av}" aria-label="Вариант ${i+1}">${playerSVG(i)}</button>`).join('')}</div>
+    <div class="row end"><button class="btn" id="go">Надеть колпак</button></div>`;
+  panel.querySelectorAll('.av2').forEach(b => b.onclick = () => {
+    S.av = +b.dataset.i; panel.querySelectorAll('.av2').forEach(x => x.setAttribute('aria-pressed', x === b));
+    $('#cc').innerHTML = playerSVG(S.av); jump($('#cc'));
+  });
+  const ok = () => { const v = $('#nm').value.trim(); if (!v) { $('#er').textContent = 'Впиши имя — так тебя будут звать на кухне.'; $('#nm').focus(); return; } S.n = v; S.k = 0; go('kitchen'); };
+  $('#go').onclick = ok; $('#nm').addEventListener('keydown', e => { if (e.key === 'Enter') ok(); }); $('#nm').focus();
+}
+
+/* --- диалоги со стрелками --- */
+function speakerHTML(w, who){
+  if (w === 'c') return `<span class="speaker c">Шеф ${esc(S.n)}</span>`;
+  if (w === 'w') return `<span class="speaker w">${waiterMini()} Официант Тимур</span>`;
+  return `<span class="speaker g">${esc(who)}</span>`;
+}
+function dialog({ lines, idx, onIdx, onEnd, endLabel, extra }){
+  const L = lines[idx];
+  panel.innerHTML = `${speakerHTML(L.w, L.who)}<div class="say">${rich(L.t)}</div>${extra ? extra(L) : ''}
+    <div class="nav"><button class="arrow back" id="prev" aria-label="Назад" ${idx===0?'disabled':''}>‹</button>
+    <div class="dots" aria-hidden="true">${lines.map((_, i) => `<i class="${i<=idx?'on':''}"></i>`).join('')}</div>
+    ${idx < lines.length - 1 ? `<button class="arrow" id="next" aria-label="Дальше">›</button>` : `<button class="btn" id="next">${endLabel}</button>`}</div>`;
+  $('#prev').onclick = () => onIdx(idx - 1);
+  $('#next').onclick = () => idx < lines.length - 1 ? onIdx(idx + 1) : onEnd();
+}
+document.addEventListener('keydown', e => {
+  if (!$('#modal').hidden) { if (e.key === 'Escape') closeModal(); return; }
+  if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
+  if (e.key === 'ArrowRight') { const n = $('#next'); if (n && !n.disabled && n.classList.contains('arrow')) n.click(); }
+  if (e.key === 'ArrowLeft') { const p = $('#prev'); if (p && !p.disabled) p.click(); }
+});
+
+/* --- комната 1: кухня --- */
+function rKitchen(){
+  room('Кухня');
+  const lines = KITCHEN1.map(([w, t, x]) => ({ w, t, x }));
+  const show = i => {
+    S.k = i; save();
+    sceneKitchen(lines[i].w);
+    if (lines[i].x === 'list') stage.classList.add('compact');
+    dialog({ lines, idx:i, onIdx:show, onEnd:() => { S.sel = null; go('hall'); }, endLabel:'Пойти в зал',
+      extra: L => L.x === 'list' ? `<div class="formgrid">${FORMLIST.map(f => `<div class="fcard" style="background:${f[2]}"><b>${f[0]}</b><span>${f[1]}</span></div>`).join('')}</div>
+        <div class="note ipnote"><span class="k">Важно: </span>ИП — не организация, а гражданин-предприниматель. Все остальные формы — коммерческие юридические лица.</div>` : '' });
+  };
+  show(Math.min(S.k || 0, lines.length - 1));
+}
+
+/* --- комната 2: зал --- */
+function rHall(){
+  room('Зал ресторана');
+  sceneHall();
+  renderHallPanel();
+}
+function renderHallPanel(){
+  const k = S.done.length, all = k === STATIONS.length;
+  if (!S.sel) {
+    panel.innerHTML = `<div class="progress"><h3>Зал ресторана</h3><span class="chip">Опрошено ${k} из ${STATIONS.length}</span></div>
+      <div class="say" style="margin-top:8px">${all ? 'Все гости опрошены — все девять рецептов собраны! Пора возвращаться на кухню и выбирать форму для фургона.' : `Над каждым столиком — форма бизнеса гостя. Гости ждут по очереди: следующий — <b>${ST(nextId()).guest}</b> (столик №${ORDER.indexOf(nextId()) + 1}). Чтобы открыть следующий столик, ответь правильно на все вопросы гостя — ошибочный вопрос придётся перерешать.`}</div>
+      ${all ? '' : '<div class="row end"><button class="btn" id="goNext">Подойти к следующему гостю</button></div>'}
+      ${all ? '<div class="row end"><button class="btn" id="back">Вернуться на кухню</button></div>' : ''}`;
+    if (!all) $('#goNext').onclick = () => { S.sel = nextId(); save(); sceneHall(); renderHallPanel(); };
+    if (all) $('#back').onclick = () => { S.fin = { phase:'talk', i:0, ci:0, crossed:[], ans:null, choice:null, van:'' }; go('final'); };
+    return;
+  }
+  const id = S.sel, st = ST(id), f = F(id), dz = DOSSIER[id], done = S.done.includes(id), sc = S.scores[id];
+  if (!done && id !== nextId()) {
+    const nx = nextId();
+    panel.innerHTML = `<div class="dossier"><div class="pic">${busts(id)}</div><div><h3>🔒 ${st.guest}</h3>
+      <div class="say">Этот гость пока занят. Гости ждут по очереди — сначала поговори с гостем за столиком №${ORDER.indexOf(nx) + 1}: <b>${ST(nx).guest}</b>.</div></div></div>
+      <div class="row end"><button class="btn ghost" id="cls">К залу</button><button class="btn" id="nx">К столику №${ORDER.indexOf(nx) + 1}</button></div>`;
+    $('#cls').onclick = () => { S.sel = null; save(); sceneHall(); renderHallPanel(); };
+    $('#nx').onclick = () => { S.sel = nx; save(); sceneHall(); renderHallPanel(); };
+    return;
+  }
+  panel.innerHTML = `<div class="dossier"><div class="pic">${busts(id)}</div>
+    <div><h3>${st.guest}</h3>
+    <dl><dt>Бизнес</dt><dd>${dz.biz}</dd><dt>Форма</dt><dd>${f.name}</dd><dt>Досье</dt><dd>${dz.fact}</dd>${done ? `<dt>Рецепт</dt><dd>собран · с первой попытки ⭐ ${sc[0]} из ${sc[1]}</dd>` : ''}</dl></div></div>
+    <div class="row end"><button class="btn ghost" id="cls">К залу</button>${done ? `<button class="btn ghost" id="rec">Открыть рецепт</button>` : ''}<button class="btn" id="talk">${done ? 'Поговорить ещё раз' : 'Подойти к столику'}</button></div>
+    ${done ? '<div class="hint">Повторный разговор — для тренировки, звёзды за него не начисляются.</div>' : ''}`;
+  $('#cls').onclick = () => { S.sel = null; save(); stage.querySelectorAll('.spot').forEach(x => x.classList.remove('sel')); renderHallPanel(); };
+  if (done) $('#rec').onclick = () => openModal(() => formSheet(id));
+  $('#talk').onclick = () => { S.cur = { id, phase:'talk', i:0, qi:0, ans:null, rows:[], got:0, replay:done, attempt:1, mist:false, ord:null, first:null }; go('convo'); };
+}
+
+/* --- комната 3: разговор и тест --- */
+function convoLines(id){
+  const st = ST(id), sd = STORY[id];
+  const retry = S.cur && S.cur.attempt > 1;
+  const intro = retry ? [{ w:'g', who:st.guest, t:'Давай напомню ещё раз! Слушай внимательно — потом снова тест.' }] : [];
+  if (CUSTOM_LINES[id]) return intro.concat(CUSTOM_LINES[id].map(([w, t]) => ({ w, who:st.guest, t })));
+  const L = intro.concat([
+    { w:'g', who:st.guest, t:(id === 'tv' ? '' : 'Привет! ') + sd[0] },
+    { w:'c', t:'А как вы создавали своё дело? Что для этого было нужно?' },
+    { w:'g', who:st.guest, t:sd[1] },
+    { w:'c', t:'А если появятся долги — кто и чем за них отвечает?' },
+    { w:'g', who:st.guest, t:sd[2] }
+  ]);
+  (TALKS[id] || []).forEach(([, replies]) => replies.forEach(([who, t]) => L.push(who === 'chef' ? { w:'c', t } : who === 'waiter' ? { w:'w', t } : { w:'g', who, t })));
+  L.push({ w:'g', who:st.guest, t:'Ну что, проверим, что запомнилось? Ответь на вопросы — и соберёшь рецепт моей формы.' });
+  return L;
+}
+function rConvo(){
+  const c = S.cur, id = c.id, st = ST(id), f = F(id);
+  if (c.attempt == null) c.attempt = 1;
+  room('У столика: ' + st.guest);
+  if (c.phase === 'talk') {
+    const lines = convoLines(id);
+    const show = i => {
+      c.i = i; save();
+      sceneConvo(id, lines[i].w === 'w' ? 'w' : lines[i].w, false);
+      dialog({ lines, idx:i, onIdx:show, onEnd:() => { c.phase = 'quiz'; c.qi = 0; c.ans = null; c.rows = []; c.got = 0; save(); rConvo(); }, endLabel:'К вопросам' });
+    };
+    show(Math.min(c.i || 0, lines.length - 1));
+  } else if (c.phase === 'quiz') convoQuiz();
+  else convoRecipe();
+}
+function recipeCard(id, rows){
+  const st = ST(id), f = F(id), total = st.items.filter(x => x.row).length;
+  const ph = Array.from({length: Math.max(0, total - rows.length)}, () => '<li class="ph">?</li>').join('');
+  return `<div class="recipe"><div class="rtop" style="background:${f.color}"><span aria-hidden="true">${f.emoji}</span><b>Рецепт: ${f.name}</b><span class="cnt">${rows.length}/${total}</span></div>
+    <ul>${rows.map(r => `<li class="${r[2]?'':'miss'}"><b>${r[0]}:</b> ${r[1]}</li>`).join('')}${ph}</ul></div>`;
+}
+function convoQuiz(){
+  const c = S.cur, id = c.id, st = ST(id), items = st.items, n = items.length, it = items[c.qi];
+  if (c.tries == null) c.tries = 0;
+  sceneConvo(id, 'g', true);
+  const opts = it.opts, ord = (c.ord && c.ord[c.qi]) || opts.map((_, k) => k);
+  panel.innerHTML = `${recipeCard(id, c.rows)}
+    <div class="qtop"><span>${st.guest} · вопрос ${c.qi+1} из ${n}${c.tries ? ' · перерешиваем' : ''}</span><span class="prog"><i style="width:${c.qi/n*100}%"></i></span></div>
+    <div class="qcard">${T(it.q)}</div>
+    <div class="opts ${opts.some(x => x.length > 34) ? 'col' : ''}">${ord.map(k => `<button class="opt" data-k="${k}">${opts[k]}</button>`).join('')}</div>`;
+  const finish = (k, fresh) => {
+    const ok = k === it.a;
+    panel.querySelectorAll('.opt').forEach(x => { const j = +x.dataset.k; x.disabled = true; if (ok && j === it.a) x.classList.add('right'); else if (j === k) x.classList.add('wrong'); });
+    if (fresh) {
+      const firstTry = c.tries === 0;
+      if (firstTry && !c.replay) S.max++;
+      if (ok) {
+        if (it.row) c.rows.push([it.row[0], it.row[1], firstTry]);
+        if (firstTry) { c.got++; if (!c.replay) { S.stars++; updStars(); popStar(); } }
+        jump($('#cc'));
+        panel.querySelector('.recipe').outerHTML = recipeCard(id, c.rows);
+      } else { c.tries++; c.mist = true; }
+      c.ans = k; save();
+    }
+    if (ok) showFB(true, it.why, c.qi < n - 1 ? 'Следующий вопрос' : 'Готово', () => {
+      c.ans = null; c.tries = 0; c.qi++;
+      if (c.qi >= n) c.phase = 'recipe';
+      save(); rConvo();
+    });
+    else showFB(false, 'Давай напомню: ' + it.why, 'Перерешать вопрос', () => {
+      c.ans = null; c.ord = c.ord || {}; c.ord[c.qi] = shuffled(opts.length);
+      save(); rConvo();
+    });
+  };
+  panel.querySelectorAll('.opt').forEach(b => b.onclick = () => finish(+b.dataset.k, true));
+  if (c.ans != null) finish(c.ans, false);
+  panel.scrollTop = 0;
+}
+function convoRecipe(){
+  const c = S.cur, id = c.id, st = ST(id), f = F(id), n = st.items.length;
+  sceneConvo(id, 'g', false);
+  if (c.first == null) { c.first = c.got; save(); }
+  if (!c.replay && !S.done.includes(id)) { S.done.push(id); S.scores[id] = [c.first, n, c.attempt]; save(); }
+  jump($('#cc'));
+  panel.innerHTML = `<div class="sum"><div class="big">${c.replay ? `✓ ${c.got} из ${n}` : '🎉 Рецепт собран'}</div>
+    <p>Рецепт «${f.name}» добавлен в Книгу рецептов. ${c.got === n ? 'С первой попытки — ни одной ошибки!' : `Все ответы верные. С первой попытки — ${c.got} из ${n}: звёзды начисляются только за них.`}${ORDER.indexOf(id) < ORDER.length - 1 && !c.replay ? ' Следующий столик открыт!' : ''}</p></div>
+    ${recipeCard(id, c.rows)}
+    <div class="note"><span class="k">❗ Ловушка ЕГЭ: </span>${f.trap}</div>
+    <div class="row end"><button class="btn ghost" id="card">Полная карточка</button><button class="btn" id="hall">Вернуться в зал</button></div>`;
+  $('#bookBtn').hidden = false;
+  $('#card').onclick = () => openModal(() => formSheet(id));
+  $('#hall').onclick = () => { S.cur = null; S.sel = null; go('hall'); };
+}
+
+/* --- финал: снова кухня --- */
+function rFinal(){
+  const fz = S.fin;
+  room('Снова на кухне');
+  if (fz.phase === 'talk') {
+    const lines = KITCHEN2.map(([w, t]) => ({ w, t }));
+    const show = i => { fz.i = i; save(); sceneKitchen(lines[i].w); dialog({ lines, idx:i, onIdx:show, onEnd:() => { fz.phase = 'check'; fz.ci = 0; fz.ans = null; save(); rFinal(); }, endLabel:'Составить чек-лист' }); };
+    show(Math.min(fz.i || 0, lines.length - 1));
+  } else if (fz.phase === 'check') finalCheck();
+  else if (fz.phase === 'pros') finalPros();
+  else if (fz.phase === 'van') finalVan();
+  else if (fz.phase === 'doc') finalDoc();
+}
+function finalCheck(){
+  const fz = S.fin, row = CHECK[fz.ci];
+  sceneKitchen('c'); stage.classList.add('compact');
+  const left = FORMS.filter(f => !fz.crossed.includes(f.id));
+  panel.innerHTML = `<div class="qtop"><span>Чек-лист · ${fz.ci+1} из ${CHECK.length}</span><span class="prog"><i style="width:${fz.ci/CHECK.length*100}%"></i></span></div>
+    <div class="qcard">${row[0]}<br><span style="font-weight:600">Шеф ${esc(S.n)}: «${row[1]}»</span></div>
+    <div class="hint" style="font-weight:700;margin-top:10px">Какую форму вычёркиваем?</div>
+    <div class="formpick">${FORMS.map(f => `<button class="fp ${fz.crossed.includes(f.id)?'gone':''}" data-id="${f.id}" style="background:${f.color}" ${fz.crossed.includes(f.id)?'disabled':''}>${f.emoji} ${f.short}</button>`).join('')}</div>`;
+  const answer = (id, freshTry) => {
+    const ok = id === row[2];
+    const b = panel.querySelector(`.fp[data-id="${id}"]`);
+    if (!ok) {
+      b.classList.add('wrong');
+      if (freshTry) { fz.first = false; }
+      showFB(false, `Шефу эта форма ещё может пригодиться. Подумай, что исключает ответ «${row[1]}».`, 'Попробовать ещё', () => { b.classList.remove('wrong'); });
+      return;
+    }
+    panel.querySelectorAll('.fp').forEach(x => x.disabled = true);
+    b.classList.add('right');
+    if (freshTry) { S.max++; if (fz.first !== false) { S.stars++; updStars(); popStar(); } fz.ans = id; save(); }
+    showFB(true, row[3], fz.ci < CHECK.length - 1 ? 'Дальше по списку' : 'Что осталось?', () => {
+      fz.crossed.push(row[2]); fz.ci++; fz.ans = null; fz.first = true;
+      if (fz.ci >= CHECK.length) fz.phase = 'pros';
+      save(); rFinal();
+    });
+  };
+  panel.querySelectorAll('.fp:not(:disabled)').forEach(b => b.onclick = () => answer(b.dataset.id, true));
+  if (fz.ans) answer(fz.ans, false);
+}
+function finalPros(){
+  sceneKitchen('w'); stage.classList.add('compact');
+  const n = esc(S.n);
+  panel.innerHTML = `${speakerHTML('w')}<div class="say">Остались две формы. У каждой свои плюсы и минусы — выбирай!</div>
+    <div class="choice">
+      <div class="ccard y"><h4>ООО</h4><div class="lbl">Плюсы</div><ul><li>Личное имущество защищено: рискуете только долями.</li><li>Не нужно сначала становиться ИП.</li></ul>
+        <div class="lbl">Минусы</div><ul><li>Нужны устав и уставный капитал от 10 000 ₽.</li><li>Вложенные в доли деньги могут пропасть.</li></ul>
+        <div class="row"><button class="btn" data-c="ooo">Выбираю ООО</button></div></div>
+      <div class="ccard"><h4>Полное товарищество</h4><div class="lbl">Плюсы</div><ul><li>Высокое доверие поставщиков и банков.</li><li>Решения — вместе, по общему согласию.</li></ul>
+        <div class="lbl">Минусы</div><ul><li>Отвечаете всем имуществом — солидарно и субсидиарно.</li><li>Сначала обоим нужно стать ИП.</li></ul>
+        <div class="row"><button class="btn" data-c="pt">Выбираю товарищество</button></div></div>
+    </div>`;
+  panel.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { S.fin.choice = b.dataset.c; S.fin.phase = S.fin.choice === 'ooo' ? 'van' : 'doc'; save(); rFinal(); });
+}
+function finalVan(){
+  sceneKitchen('w');
+  panel.innerHTML = `${speakerHTML('w')}<div class="say">Отличный выбор! Как назовём фургон? Это название будет в наименовании ООО.</div>
+    <div class="field"><input id="vn" maxlength="32" placeholder="Например, Хот-дог на колёсах" autocomplete="off" aria-label="Название фургона" value="${esc(S.fin.van || '')}"></div><div class="err" id="er"></div>
+    <div class="row end"><button class="btn" id="ok">Записать название</button></div>`;
+  const ok = () => { const v = $('#vn').value.trim().replace(/[«»"]/g, ''); if (!v) { $('#er').textContent = 'Придумай название — без вывески никуда.'; return; } S.fin.van = v; S.fin.phase = 'doc'; save(); rFinal(); };
+  $('#ok').onclick = ok; $('#vn').addEventListener('keydown', e => { if (e.key === 'Enter') ok(); }); $('#vn').focus();
+}
+function finalDoc(){
+  const fz = S.fin, right = fz.choice === 'ooo' ? 0 : 1;
+  sceneKitchen('w'); stage.classList.add('compact');
+  const opts = ['Устав', 'Учредительный договор', 'Никакого — только регистрация как ИП'];
+  panel.innerHTML = `${speakerHTML('w')}<div class="say">Последний шаг перед регистрацией: какой учредительный документ приложим к заявлению?</div>
+    <div class="opts col">${opts.map((o,k) => `<button class="opt" data-k="${k}">${o}</button>`).join('')}</div>`;
+  const ans = (k, fresh) => {
+    const ok = k === right;
+    panel.querySelectorAll('.opt').forEach((x, j) => { x.disabled = true; if (j === right) x.classList.add('right'); else if (j === k) x.classList.add('wrong'); });
+    if (fresh) { S.max++; if (ok) { S.stars++; updStars(); popStar(); } fz.ans = k; save(); }
+    showFB(ok, right === 0 ? 'ООО, как и все юрлица, кроме хозяйственных товариществ, действует на основании устава (ст. 52 ГК РФ).' : 'Полное товарищество — хозяйственное товарищество, а значит его документ — учредительный договор (ст. 52 ГК РФ).', 'Открыть дело!', () => { fz.ans = null; go('done'); });
+  };
+  panel.querySelectorAll('.opt').forEach(b => b.onclick = () => ans(+b.dataset.k, true));
+  if (fz.ans != null) ans(fz.ans, false);
+}
+function rDone(){
+  room('Дело открыто');
+  const fz = S.fin, n = esc(S.n), isO = fz.choice === 'ooo';
+  stage.className = 'stage' + (innerHeight < 760 ? ' compact' : '');
+  stage.innerHTML = `<div class="vanart"><span style="height:80%;display:flex;align-items:flex-end">${WAITER.replace('<svg ', '<svg style="height:100%;width:auto" ')}</span>${VAN}<span style="height:80%;display:flex;align-items:flex-end" id="cc">${playerSVG(S.av).replace('<svg ', '<svg style="height:100%;width:auto" ')}</span></div>`;
+  confetti();
+  const r = S.max ? S.stars / S.max : 0;
+  const level = r >= .9 ? 'Фургон с очередью до угла' : r >= .75 ? 'Хот-доги расходятся бойко' : r >= .5 ? 'Первые покупатели уже есть' : 'Фургон пока на стоянке — есть куда расти';
+  panel.innerHTML = `<div class="cert">
+    <h2>Дело открыто, шеф ${n}!</h2>
+    <div class="sub">Фургон с хот-догами зарегистрирован${isO ? ' как ООО' : ' как полное товарищество'} и выезжает на улицы.</div>
+    <dl>
+      <dt>Наименование</dt><dd>${isO ? `ООО «${esc(fz.van)}»` : `Полное товарищество «${n}, Тимур и компания»`}</dd>
+      <dt>Документ</dt><dd>${isO ? 'устав, уставный капитал от 10 000 ₽' : 'учредительный договор; оба — ИП'}</dd>
+      <dt>По долгам</dt><dd>${isO ? 'рискуют только стоимостью своих долей' : 'всем имуществом — солидарно и субсидиарно'}</dd>
+    </dl>
+    <div class="rating">⭐ ${S.stars} из ${S.max} — ${level}</div></div>
+    <div class="row end"><button class="btn ghost" id="book">📖 Книга рецептов</button><button class="btn" id="again">Сыграть ещё раз</button></div>`;
+  $('#book').onclick = () => openModal(bookSheet);
+  $('#again').onclick = () => { wipe(); S = fresh(); go('name'); };
+}
+
+/* ===================== книга рецептов ===================== */
+const modal = $('#modal'), sheet = $('#sheet');
+let lastFocus = null;
+function openModal(fn){ lastFocus = document.activeElement; fn(); modal.hidden = false; const c = $('#mClose'); if (c) c.focus(); }
+function closeModal(){ modal.hidden = true; if (lastFocus) lastFocus.focus(); }
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+function formSheet(id, back){
+  const f = F(id);
+  sheet.innerHTML = `<div class="top" style="background:${f.color}"><span class="em" aria-hidden="true">${f.emoji}</span><div><small>${f.kind}</small><h3>${f.name}</h3></div><button class="close" id="mClose" aria-label="Закрыть">✕</button></div>
+   <div class="body"><table class="facts">${f.rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</table>
+   <div class="note"><span class="k">🍳 На кухне это как: </span>${f.kitchen}</div>
+   <div class="note"><span class="k">❗ Ловушка ЕГЭ: </span>${f.trap}</div>
+   <div class="law">${f.law}</div>
+   <div class="row end">${back ? '<button class="btn ghost" id="mBack">Ко всей книге</button>' : ''}<button class="btn" id="mOk">Понятно</button></div></div>`;
+  $('#mClose').onclick = closeModal; $('#mOk').onclick = closeModal;
+  if (back) $('#mBack').onclick = bookSheet;
+}
+function bookSheet(){
+  sheet.innerHTML = `<div class="top" style="background:#ffd0dc"><span class="em" aria-hidden="true">📖</span><div><small>Собрано рецептов: ${S.done.length} из 9</small><h3>Книга рецептов</h3></div><button class="close" id="mClose" aria-label="Закрыть">✕</button></div>
+   <div class="body"><div class="bookgrid">${FORMS.map(f => { const has = S.done.includes(f.id);
+     return `<button class="dish" data-id="${f.id}" style="background:${f.color}" ${has?'':'disabled'}><span class="em" aria-hidden="true">${has ? f.emoji : '🔒'}</span><span class="sh">${f.short}</span><span class="nm">${has ? f.name : 'Расспроси гостя: ' + ST(f.id).guest}</span></button>`; }).join('')}</div>
+   <div class="note"><span class="k">📜 Правило ст. 52 ГК РФ: </span>учредительный договор — только у хозяйственных товариществ (полного и на вере). Остальные юрлица действуют на основании устава.</div></div>`;
+  $('#mClose').onclick = closeModal;
+  sheet.querySelectorAll('.dish:not(:disabled)').forEach(b => b.onclick = () => formSheet(b.dataset.id, true));
+}
+$('#bookBtn').onclick = () => openModal(bookSheet);
+$('#menuBtn').onclick = () => { save(); S.screen === 'title' ? null : (hideFB(), rTitleFromMenu()); };
+function rTitleFromMenu(){ const keep = S; save(); S = fresh(); S.screen = 'title'; rTitle(); S = keep; $('#menuBtn').hidden = true; $('#bookBtn').hidden = true; }
+
+/* ===================== старт ===================== */
+rTitle();
+</script>
+</body>
+</html>
